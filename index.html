@@ -1,0 +1,692 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Citi Pharma | Laboratory Management - Quality • Precision • Compliance</title>
+  <meta name="description" content="Citi Pharma Laboratory Information Management System (LIMS) - Enterprise analytical testing, batch release, 21 CFR Part 11 compliance, and Certificate of Analysis generation.">
+  <link rel="icon" type="image/jpeg" href="assets/citi_pharma_logo.jpg">
+  <link rel="stylesheet" href="styles/main.css">
+</head>
+<body>
+  <div class="app-container">
+    <!-- ======================================================================
+         1. Dark Blue Sidebar Navigation
+         ====================================================================== -->
+    <aside class="sidebar" id="sidebar">
+      <div class="sidebar-header">
+        <div class="sidebar-brand-logo">
+          <img src="assets/citi_pharma_logo.jpg" alt="Citi Pharma Laboratory Seal">
+        </div>
+        <div class="sidebar-brand-text">
+          <span class="brand-title">Citi Pharma</span>
+          <span class="brand-subtitle">Lab Management</span>
+          <span class="brand-motto">Quality • Precision • Compliance</span>
+        </div>
+      </div>
+
+      <nav class="sidebar-nav">
+        <span class="nav-section-title">Core Laboratory</span>
+        <a href="#dashboard" class="nav-item active" data-view="dashboard" id="navDashboard">
+          <svg viewBox="0 0 24 24" fill="none"><rect width="7" height="9" x="3" y="3" rx="1"/><rect width="7" height="5" x="14" y="3" rx="1"/><rect width="7" height="9" x="14" y="12" rx="1"/><rect width="7" height="5" x="3" y="16" rx="1"/></svg>
+          <span>QC Dashboard</span>
+        </a>
+        <a href="#samples" class="nav-item" data-view="samples" id="navSamples">
+          <svg viewBox="0 0 24 24" fill="none"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+          <span>Sample Records</span>
+          <span class="nav-badge teal" id="navSampleCount">12</span>
+        </a>
+        <a href="#register" class="nav-item" data-view="register" id="navRegister">
+          <svg viewBox="0 0 24 24" fill="none"><path d="M12 5v14"/><path d="M5 12h14"/><circle cx="12" cy="12" r="10"/></svg>
+          <span>Register Sample</span>
+        </a>
+
+        <span class="nav-section-title">Compliance & Quality</span>
+        <a href="#instruments" class="nav-item" data-view="instruments" id="navInstruments">
+          <svg viewBox="0 0 24 24" fill="none"><path d="M6 18h12"/><path d="M12 2v16"/><path d="m19 12-7 7-7-7"/></svg>
+          <span>Instruments & Calib</span>
+          <span class="nav-badge amber" title="Calibrations Due">1 Due</span>
+        </a>
+        <a href="#coa" class="nav-item" data-view="coa" id="navCoA">
+          <svg viewBox="0 0 24 24" fill="none"><path d="M12 15h.01"/><path d="M12 11a3 3 0 1 0 0-6 3 3 0 0 0 0 6Z"/><path d="M17.6 15A9 9 0 1 0 6.4 15"/><path d="M12 18v3"/><path d="m8 21 4-2 4 2"/></svg>
+          <span>Certificate of Analysis</span>
+        </a>
+        <a href="#audit" class="nav-item" data-view="audit" id="navAudit">
+          <svg viewBox="0 0 24 24" fill="none"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+          <span>21 CFR Part 11 Log</span>
+        </a>
+      </nav>
+
+      <div class="sidebar-footer">
+        <div class="user-avatar" title="Dr. Ayesha Khan">AK</div>
+        <div class="user-info">
+          <span class="user-name">Dr. Ayesha Khan</span>
+          <span class="user-role">Senior QC Lead Chemist</span>
+          <div class="compliance-badge-sidebar">
+            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>
+            <span>cGMP Certified</span>
+          </div>
+        </div>
+      </div>
+    </aside>
+
+    <!-- ======================================================================
+         2. Main Application Workspace
+         ====================================================================== -->
+    <main class="main-content">
+      <!-- Top Navigation Header -->
+      <header class="top-header">
+        <div class="header-left">
+          <button class="mobile-menu-btn" id="mobileMenuBtn" aria-label="Toggle Sidebar Navigation">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+          </button>
+          <div class="page-breadcrumb">
+            <span class="breadcrumb-sub" id="viewSubtitle">Operational Overview</span>
+            <h1 class="breadcrumb-main" id="viewTitle">Quality Control Dashboard</h1>
+          </div>
+        </div>
+
+        <div class="header-actions">
+          <div class="system-status-indicator" title="Laboratory Information Management Network Active">
+            <span class="pulse-dot"></span>
+            <span>cGMP Lab Node #04 • Online</span>
+          </div>
+          <button class="btn btn-teal btn-sm" data-action="quick-register" id="headerNewSampleBtn">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            <span>Intake Sample</span>
+          </button>
+          <button class="btn btn-secondary btn-sm" id="exportCsvBtn" title="Export Sample Records to CSV">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+            <span>Export</span>
+          </button>
+          <button class="btn btn-secondary btn-sm" id="resetDemoDataBtn" title="Reset dataset to default Citi Pharma samples">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>
+          </button>
+        </div>
+      </header>
+
+      <!-- Workspace Body -->
+      <div class="workspace">
+
+        <!-- ==================================================================
+             VIEW 1: QC DASHBOARD
+             ================================================================== -->
+        <section class="view-section active" id="view-dashboard">
+          <!-- Hero Compliance Banner -->
+          <div class="compliance-hero-banner">
+            <div class="banner-content">
+              <h2>
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+                Citi Pharma Quality Control & Compliance
+              </h2>
+              <p>
+                Real-time surveillance of batch testing, pharmacopeial assays, out-of-specification (OOS) investigations, and electronic batch release under WHO & FDA cGMP standards.
+              </p>
+            </div>
+            <div class="banner-metrics">
+              <div class="banner-metric-item">
+                <div class="banner-metric-value" id="bannerPassRate">94.6%</div>
+                <div class="banner-metric-label">Batch Pass Rate</div>
+              </div>
+              <div class="banner-metric-item">
+                <div class="banner-metric-value" id="bannerActiveTests">3</div>
+                <div class="banner-metric-label">Active / Retest</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- KPI Cards Grid -->
+          <div class="stats-grid">
+            <!-- Total Samples -->
+            <div class="stat-card total">
+              <div class="stat-info">
+                <span class="stat-label">Total Sample Queue</span>
+                <span class="stat-value" id="kpiTotalSamples">12</span>
+                <span class="stat-subtext">Active lot testing in QC stream</span>
+              </div>
+              <div class="stat-icon">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect width="8" height="4" x="8" y="2" rx="1" ry="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/></svg>
+              </div>
+            </div>
+
+            <!-- Pass / Released Rate -->
+            <div class="stat-card pass">
+              <div class="stat-info">
+                <span class="stat-label">Pass / Released</span>
+                <span class="stat-value" id="kpiPassRate">75.0%</span>
+                <span class="stat-subtext positive" id="kpiPassCountSub">9 batches released</span>
+              </div>
+              <div class="stat-icon">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
+              </div>
+            </div>
+
+            <!-- Quarantine / Retest -->
+            <div class="stat-card quarantine">
+              <div class="stat-info">
+                <span class="stat-label">Quarantine / Retest</span>
+                <span class="stat-value" id="kpiQuarantine">2</span>
+                <span class="stat-subtext warning">Incubation & repeat assay</span>
+              </div>
+              <div class="stat-icon">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+              </div>
+            </div>
+
+            <!-- Fail / Rejected -->
+            <div class="stat-card fail">
+              <div class="stat-info">
+                <span class="stat-label">Fail / Rejected (OOS)</span>
+                <span class="stat-value" id="kpiFailures">2</span>
+                <span class="stat-subtext danger">OOS investigations open</span>
+              </div>
+              <div class="stat-icon">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>
+              </div>
+            </div>
+          </div>
+
+          <!-- Dashboard Charts & Alert Row -->
+          <div class="dashboard-grid">
+            <!-- Left: Throughput & Urgent Items -->
+            <div style="display: flex; flex-direction: column; gap: 24px;">
+              <!-- 7-Day Analytical Throughput -->
+              <div class="card">
+                <div class="card-header">
+                  <span class="card-title">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+                    Weekly Batch Testing Throughput
+                  </span>
+                  <span style="font-size: 0.75rem; color: var(--text-muted); font-weight: 600;">Last 7 Days</span>
+                </div>
+                <div class="card-body">
+                  <div id="throughputBarChart"></div>
+                </div>
+              </div>
+
+              <!-- Urgent Laboratory Action Items -->
+              <div class="card">
+                <div class="card-header">
+                  <span class="card-title">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--warning-amber)" stroke-width="2"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+                    Urgent QA/QC Action Items
+                  </span>
+                  <button class="btn btn-sm btn-secondary" data-action="quick-samples">View All</button>
+                </div>
+                <div class="card-body">
+                  <div id="dashboardUrgentAlerts"></div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Right: Status Donut Chart & Lab Instruments Status -->
+            <div style="display: flex; flex-direction: column; gap: 24px;">
+              <!-- Sample Disposition Ratio -->
+              <div class="card">
+                <div class="card-header">
+                  <span class="card-title">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 2a10 10 0 0 1 10 10h-10z"/></svg>
+                    Batch Disposition Ratio
+                  </span>
+                </div>
+                <div class="card-body">
+                  <div id="donutChartContainer"></div>
+                </div>
+              </div>
+
+              <!-- Lab Compliance Checklist -->
+              <div class="card">
+                <div class="card-header">
+                  <span class="card-title">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+                    Compliance Indicators
+                  </span>
+                </div>
+                <div class="card-body" style="display: flex; flex-direction: column; gap: 12px; font-size: 0.82rem;">
+                  <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-subtle); padding-bottom: 8px;">
+                    <span>21 CFR Part 11 Electronic Signature</span>
+                    <span class="badge badge-pass"><span class="badge-dot"></span> Compliant</span>
+                  </div>
+                  <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-subtle); padding-bottom: 8px;">
+                    <span>HPLC Chromatography Calibration</span>
+                    <span class="badge badge-pass"><span class="badge-dot"></span> Validated</span>
+                  </div>
+                  <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-subtle); padding-bottom: 8px;">
+                    <span>Analytical Balance Calib Check</span>
+                    <span class="badge badge-quarantine"><span class="badge-dot"></span> Due in 48h</span>
+                  </div>
+                  <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <span>Stability Chamber #SC-02 (40°C/75%)</span>
+                    <span class="badge badge-pass"><span class="badge-dot"></span> Regulated</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- ==================================================================
+             VIEW 2: SAMPLE TESTING RECORDS
+             ================================================================== -->
+        <section class="view-section" id="view-samples">
+          <div class="card">
+            <!-- Filter Bar -->
+            <div class="table-filter-bar">
+              <div class="search-box-wrapper">
+                <svg class="search-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"></circle><path d="m21 21-4.3-4.3"></path></svg>
+                <input type="text" class="search-input" id="sampleSearchInput" placeholder="Search by Sample ID, Batch No, Product Name, Analyst...">
+              </div>
+
+              <div class="status-pill-tabs">
+                <button class="status-pill active" data-status="ALL">
+                  All <span class="status-pill-count" id="countAll">12</span>
+                </button>
+                <button class="status-pill" data-status="Pass/Released">
+                  Pass/Released <span class="status-pill-count" id="countPass">8</span>
+                </button>
+                <button class="status-pill" data-status="Quarantine/Retest">
+                  Quarantine <span class="status-pill-count" id="countQuar">2</span>
+                </button>
+                <button class="status-pill" data-status="Fail/Rejected">
+                  Rejected <span class="status-pill-count" id="countFail">2</span>
+                </button>
+              </div>
+
+              <div class="filter-group">
+                <select class="filter-select" id="categoryFilter">
+                  <option value="ALL">All Categories</option>
+                  <option value="Finished Product">Finished Product</option>
+                  <option value="Raw Material (API)">Raw Material (API)</option>
+                  <option value="Sterile Injectable">Sterile Injectable</option>
+                  <option value="Stability Testing">Stability Testing</option>
+                  <option value="In-Process / Utility">In-Process / Utility</option>
+                  <option value="Cleanroom Disinfectant">Cleanroom Disinfectant</option>
+                </select>
+                <button class="btn btn-teal btn-sm" data-action="quick-register">
+                  + Register Sample
+                </button>
+              </div>
+            </div>
+
+            <!-- Records Table -->
+            <div class="table-responsive">
+              <table class="lims-table" id="samplesTable">
+                <thead>
+                  <tr>
+                    <th>Sample ID / Lot</th>
+                    <th>Product & Monograph</th>
+                    <th>Analytical Test & Specification</th>
+                    <th>Assigned Analyst</th>
+                    <th>Received Date</th>
+                    <th>Compliance Status</th>
+                    <th>Actions</th>
+                  </tr>
+                </thead>
+                <tbody id="samplesTableBody">
+                  <!-- Populated dynamically by app.js -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+
+        <!-- ==================================================================
+             VIEW 3: REGISTER NEW SAMPLE
+             ================================================================== -->
+        <section class="view-section" id="view-register">
+          <div class="card" style="max-width: 900px; margin: 0 auto; width: 100%;">
+            <div class="card-header">
+              <span class="card-title">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="12" y1="18" x2="12" y2="12"/><line x1="9" y1="15" x2="15" y2="15"/></svg>
+                New Sample Intake & Chain of Custody Registration
+              </span>
+              <span style="font-size: 0.78rem; color: var(--text-muted); font-weight: 600;">Citi Pharma Quality Assurance</span>
+            </div>
+            <div class="card-body">
+              <form id="sampleRegistrationForm">
+                <div class="form-grid">
+                  <!-- Product Name -->
+                  <div class="form-group full-width">
+                    <label class="form-label" for="regProductName">Product / Chemical Name <span class="required-star">*</span></label>
+                    <input type="text" id="regProductName" class="form-control" placeholder="e.g. Cefixime Trihydrate 400mg Capsules" required>
+                    <span class="form-hint">Official trade name or API chemical nomenclature</span>
+                  </div>
+
+                  <!-- Batch / Lot No -->
+                  <div class="form-group">
+                    <label class="form-label" for="regBatchNo">Batch / Lot Number <span class="required-star">*</span></label>
+                    <input type="text" id="regBatchNo" class="form-control mono" placeholder="e.g. CFX-400-B102" required>
+                  </div>
+
+                  <!-- Batch Size -->
+                  <div class="form-group">
+                    <label class="form-label" for="regBatchSize">Batch Size / Quantity</label>
+                    <input type="text" id="regBatchSize" class="form-control" placeholder="e.g. 350,000 Capsules or 100 kg Drum">
+                  </div>
+
+                  <!-- Product Category -->
+                  <div class="form-group">
+                    <label class="form-label" for="regCategory">Category <span class="required-star">*</span></label>
+                    <select id="regCategory" class="form-control" required>
+                      <option value="Finished Product">Finished Product</option>
+                      <option value="Raw Material (API)">Raw Material (API)</option>
+                      <option value="Sterile Injectable">Sterile Injectable</option>
+                      <option value="Stability Testing">Stability Testing</option>
+                      <option value="In-Process / Utility">In-Process / Utility</option>
+                      <option value="Excipient">Excipient</option>
+                    </select>
+                  </div>
+
+                  <!-- Pharmacopeia Monograph -->
+                  <div class="form-group">
+                    <label class="form-label" for="regPharmacopeia">Pharmacopeial Standard <span class="required-star">*</span></label>
+                    <select id="regPharmacopeia" class="form-control" required>
+                      <option value="BP 2026">BP 2026 (British Pharmacopoeia)</option>
+                      <option value="USP 48-NF 43">USP 48-NF 43 (United States Pharmacopeia)</option>
+                      <option value="Ph. Eur. 11.0">Ph. Eur. 11.0 (European Pharmacopoeia)</option>
+                      <option value="In-House Validated">In-House Validated Method</option>
+                    </select>
+                  </div>
+
+                  <!-- Manufacturing Date -->
+                  <div class="form-group">
+                    <label class="form-label" for="regMfgDate">Manufacturing Date <span class="required-star">*</span></label>
+                    <input type="date" id="regMfgDate" class="form-control" required>
+                  </div>
+
+                  <!-- Expiry Date -->
+                  <div class="form-group">
+                    <label class="form-label" for="regExpDate">Expiry Date <span class="required-star">*</span></label>
+                    <input type="date" id="regExpDate" class="form-control" required>
+                  </div>
+
+                  <!-- Storage Condition -->
+                  <div class="form-group">
+                    <label class="form-label" for="regStorage">Storage Condition</label>
+                    <select id="regStorage" class="form-control">
+                      <option value="Room Temp (15-25°C)">Room Temp (15-25°C)</option>
+                      <option value="Cold Storage (2-8°C)">Cold Storage (2-8°C)</option>
+                      <option value="Below 30°C, Dry Place">Below 30°C, Dry Place</option>
+                      <option value="Stability Chamber (40°C/75% RH)">Stability Chamber (40°C/75% RH)</option>
+                      <option value="Flammable Safety Cabinet">Flammable Safety Cabinet</option>
+                    </select>
+                  </div>
+
+                  <!-- Priority & Analyst -->
+                  <div class="form-group">
+                    <label class="form-label" for="regPriority">Testing Priority</label>
+                    <select id="regPriority" class="form-control">
+                      <option value="Normal">Normal Turnaround (48-72 hrs)</option>
+                      <option value="Urgent">Urgent / Stat (Immediate QA Release)</option>
+                    </select>
+                  </div>
+
+                  <div class="form-group full-width">
+                    <label class="form-label" for="regAnalyst">Assigned Analyst / Chemist <span class="required-star">*</span></label>
+                    <select id="regAnalyst" class="form-control" required>
+                      <option value="Dr. Ayesha Khan">Dr. Ayesha Khan (QC Lead - Solid Orals)</option>
+                      <option value="Zubair Ahmed">Zubair Ahmed (Instrumental Analysis HPLC/GC)</option>
+                      <option value="Sana Rizvi">Sana Rizvi (Dissolution & Physical Testing)</option>
+                      <option value="M. Bilal Tariq">M. Bilal Tariq (Microbiology & Sterility)</option>
+                      <option value="Hamza Shafiq">Hamza Shafiq (Environmental & Wet Chemistry)</option>
+                    </select>
+                  </div>
+
+                  <!-- Target Specification Limit -->
+                  <div class="form-group full-width">
+                    <label class="form-label" for="regTargetSpec">Target Analytical Specification</label>
+                    <input type="text" id="regTargetSpec" class="form-control" placeholder="e.g. Assay: 98.0% - 102.0% | Dissolution: ≥ 80.0% in 30 min | Impurities NMT 0.2%">
+                  </div>
+
+                  <!-- Tests Required Checklist -->
+                  <div class="form-group full-width">
+                    <label class="form-label">Pharmacopeial Tests Required</label>
+                    <div class="test-checklist">
+                      <label class="checkbox-label">
+                        <input type="checkbox" class="reg-test-chk" value="Assay by HPLC" data-spec="98.0 - 102.0 %" checked>
+                        Assay (% Label Claim by HPLC)
+                      </label>
+                      <label class="checkbox-label">
+                        <input type="checkbox" class="reg-test-chk" value="Dissolution Rate" data-spec="Q ≥ 80.0% at 30 min" checked>
+                        Dissolution Profile (USP Type II)
+                      </label>
+                      <label class="checkbox-label">
+                        <input type="checkbox" class="reg-test-chk" value="Water Content (KF)" data-spec="NMT 5.0 %">
+                        Water Content (Karl Fischer)
+                      </label>
+                      <label class="checkbox-label">
+                        <input type="checkbox" class="reg-test-chk" value="Related Substances / Impurities" data-spec="NMT 0.2 %">
+                        Chromatographic Purity & Impurities
+                      </label>
+                      <label class="checkbox-label">
+                        <input type="checkbox" class="reg-test-chk" value="Uniformity of Dosage Units" data-spec="AV ≤ 15.0">
+                        Uniformity of Dosage Units (AV)
+                      </label>
+                      <label class="checkbox-label">
+                        <input type="checkbox" class="reg-test-chk" value="Disintegration Time" data-spec="NMT 15 minutes">
+                        Disintegration Time (BP/USP)
+                      </label>
+                    </div>
+                  </div>
+                </div>
+
+                <div style="margin-top: 24px; display: flex; justify-content: flex-end; gap: 12px; border-top: 1px solid var(--border-subtle); padding-top: 20px;">
+                  <button type="button" class="btn btn-secondary" onclick="window.history.back()">Cancel</button>
+                  <button type="submit" class="btn btn-teal">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+                    Confirm & Register Sample
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        </section>
+
+        <!-- ==================================================================
+             VIEW 4: LAB INSTRUMENTS & CALIBRATION
+             ================================================================== -->
+        <section class="view-section" id="view-instruments">
+          <div class="card">
+            <div class="card-header">
+              <span class="card-title">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 18h12"/><path d="M12 2v16"/><path d="m19 12-7 7-7-7"/></svg>
+                Laboratory Instruments Qualification & Calibration Register
+              </span>
+              <span style="font-size: 0.78rem; color: var(--text-muted); font-weight: 600;">ISO 17025 / GMP Compliance</span>
+            </div>
+            <div class="table-responsive">
+              <table class="lims-table">
+                <thead>
+                  <tr>
+                    <th>Instrument ID</th>
+                    <th>Model & Description</th>
+                    <th>Lab Location</th>
+                    <th>Last Calibrated</th>
+                    <th>Next Due Date</th>
+                    <th>Operational Status</th>
+                    <th>Action</th>
+                  </tr>
+                </thead>
+                <tbody id="instrumentsTableBody">
+                  <!-- Populated dynamically by app.js -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+
+        <!-- ==================================================================
+             VIEW 5: CERTIFICATE OF ANALYSIS (CoA)
+             ================================================================== -->
+        <section class="view-section" id="view-coa">
+          <div class="no-print" style="display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-bottom: 20px; background: #FFFFFF; padding: 14px 20px; border-radius: var(--radius-lg); border: 1px solid var(--border-subtle); box-shadow: var(--shadow-sm);">
+            <div style="display: flex; align-items: center; gap: 12px; flex: 1;">
+              <label for="coaSampleSelect" style="font-size: 0.82rem; font-weight: 700; color: var(--pharma-blue); white-space: nowrap;">
+                Select Batch for CoA:
+              </label>
+              <select id="coaSampleSelect" class="form-control" style="max-width: 480px;">
+                <!-- Populated dynamically by app.js -->
+              </select>
+            </div>
+            <div style="display: flex; gap: 10px;">
+              <button class="btn btn-secondary btn-sm" id="downloadCoaJsonBtn">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                Export JSON
+              </button>
+              <button class="btn btn-primary btn-sm" id="printCoABtn">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect width="12" height="8" x="6" y="14"/></svg>
+                Print / Save PDF CoA
+              </button>
+            </div>
+          </div>
+
+          <!-- Printable CoA Official Container -->
+          <div id="coaDocumentContainer">
+            <!-- Rendered by app.js -->
+          </div>
+        </section>
+
+        <!-- ==================================================================
+             VIEW 6: 21 CFR PART 11 AUDIT TRAIL
+             ================================================================== -->
+        <section class="view-section" id="view-audit">
+          <div class="card">
+            <div class="card-header">
+              <span class="card-title">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+                21 CFR Part 11 Electronic Records & Audit Trail Log
+              </span>
+              <span class="badge badge-pass"><span class="badge-dot"></span> Tamper-Evident SHA-256</span>
+            </div>
+            <div class="table-responsive">
+              <table class="lims-table">
+                <thead>
+                  <tr>
+                    <th>Timestamp (UTC)</th>
+                    <th>Authorized User</th>
+                    <th>Action Protocol</th>
+                    <th>Target Entity</th>
+                    <th>Modification / Transaction Detail</th>
+                    <th>Cryptographic Checksum</th>
+                  </tr>
+                </thead>
+                <tbody id="auditTrailTableBody">
+                  <!-- Populated dynamically by app.js -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+
+      </div>
+    </main>
+  </div>
+
+  <!-- ========================================================================
+       MODAL 1: SAMPLE RECORD DETAILS & SPECIFICATION
+       ======================================================================== -->
+  <div class="modal-overlay" id="sampleDetailModal">
+    <div class="modal-container">
+      <div class="modal-header">
+        <span class="modal-title">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--teal-green)" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+          <span id="detailModalTitle">Sample Details</span>
+        </span>
+        <button class="modal-close-btn" data-modal-close aria-label="Close modal">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
+      </div>
+      <div class="modal-body">
+        <div class="detail-meta-grid" id="detailModalMeta"></div>
+        <h4 style="font-size: 0.9rem; color: var(--pharma-blue); margin-bottom: 8px; text-transform: uppercase;">Pharmacopeial Tests & Conformance</h4>
+        <div id="detailModalTests"></div>
+        <div id="detailModalNotes"></div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" data-modal-close>Close</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========================================================================
+       MODAL 2: ENTER / UPDATE TEST RESULTS
+       ======================================================================== -->
+  <div class="modal-overlay" id="testResultModal">
+    <div class="modal-container">
+      <div class="modal-header">
+        <span class="modal-title">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--pharma-blue)" stroke-width="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>
+          <span id="resultModalTitle">Log Test Results</span>
+        </span>
+        <button class="modal-close-btn" data-modal-close aria-label="Close modal">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
+      </div>
+      <div class="modal-body">
+        <p style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 16px;">
+          Enter verified laboratory observations. Toggling the compliance checkbox automatically recalculates batch disposition.
+        </p>
+
+        <div id="resultTestEntriesContainer">
+          <!-- Dynamic test inputs -->
+        </div>
+
+        <div style="margin-top: 20px; display: flex; flex-direction: column; gap: 14px;">
+          <div class="form-group">
+            <label class="form-label" for="resultDispositionStatus">Overall Batch Disposition Status</label>
+            <select id="resultDispositionStatus" class="form-control" style="font-weight: 600;">
+              <option value="Pass/Released">Pass / Released (Teal Green)</option>
+              <option value="Quarantine/Retest">Quarantine / Retest (Warning Amber)</option>
+              <option value="Fail/Rejected">Fail / Rejected - OOS Flag (Red)</option>
+              <option value="In Testing">In Testing (Blue)</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="resultDispositionNotes">QA/QC Analyst Sign-off Remarks</label>
+            <textarea id="resultDispositionNotes" class="form-control" rows="2" placeholder="e.g. All test parameters conform to BP 2026 monograph specification."></textarea>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" data-modal-close>Cancel</button>
+        <button class="btn btn-teal" id="saveTestResultsBtn">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+          Save & Sign Electronically
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========================================================================
+       MODAL 3: INSTRUMENT CALIBRATION CHECK
+       ======================================================================== -->
+  <div class="modal-overlay" id="calibrateModal">
+    <div class="modal-container" style="max-width: 520px;">
+      <div class="modal-header">
+        <span class="modal-title" id="calibModalTitle">Calibration Qualification</span>
+        <button class="modal-close-btn" data-modal-close aria-label="Close modal">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
+      </div>
+      <div class="modal-body">
+        <div id="calibModalDetail"></div>
+        <p style="font-size: 0.82rem; color: var(--text-secondary);">
+          Confirming this action registers standard calibration verification against traceable reference standards (NIST/ISO) and extends certification for 90 days.
+        </p>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" data-modal-close>Cancel</button>
+        <button class="btn btn-teal" id="confirmCalibrateBtn">Verify & Extend Certificate</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast Notification Container -->
+  <div class="toast-container" id="toastContainer"></div>
+
+  <!-- Application Scripts -->
+  <script src="scripts/data.js"></script>
+  <script src="scripts/app.js"></script>
+</body>
+</html>
