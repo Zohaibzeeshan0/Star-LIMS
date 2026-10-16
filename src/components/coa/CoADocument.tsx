@@ -161,8 +161,8 @@ export function CoADocument({ sample, samplesList, onSelectSample }: CoADocument
           <h3 className="font-heading text-sm font-bold uppercase tracking-wider text-pharma-blue mb-3">
             Analytical Monograph Testing Results
           </h3>
-          <div className="rounded-lg border border-slate-200 overflow-hidden">
-            <table className="w-full text-left text-xs">
+          <div className="rounded-lg border border-slate-200 overflow-x-auto">
+            <table className="w-full text-left text-xs min-w-[550px]">
               <thead className="bg-slate-100 border-b border-slate-200 font-bold uppercase text-[10px] text-slate-700">
                 <tr>
                   <th className="py-2.5 px-3.5 w-1/3">Test Parameter</th>

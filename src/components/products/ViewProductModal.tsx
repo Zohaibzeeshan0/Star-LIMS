@@ -253,8 +253,8 @@ export function ViewProductModal({
                   </span>
                 </div>
 
-                <div className="rounded-xl border border-slate-200 overflow-hidden">
-                  <table className="w-full text-left text-xs border-collapse">
+                <div className="rounded-xl border border-slate-200 overflow-x-auto">
+                  <table className="w-full text-left text-xs border-collapse min-w-[550px]">
                     <thead>
                       <tr className="bg-slate-100/80 border-b border-slate-200 text-[10px] font-bold uppercase text-slate-600">
                         <th className="py-2.5 px-3">Test Parameter</th>
@@ -330,8 +330,8 @@ export function ViewProductModal({
                   <p className="font-semibold text-xs text-slate-700">No status transitions logged yet.</p>
                 </div>
               ) : (
-                <div className="rounded-xl border border-slate-200 overflow-hidden">
-                  <table className="w-full text-left text-xs border-collapse">
+                <div className="rounded-xl border border-slate-200 overflow-x-auto">
+                  <table className="w-full text-left text-xs border-collapse min-w-[550px]">
                     <thead>
                       <tr className="bg-slate-100/80 border-b border-slate-200 text-[10px] font-bold uppercase text-slate-600">
                         <th className="py-2.5 px-3">Status</th>

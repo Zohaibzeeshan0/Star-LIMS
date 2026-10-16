@@ -62,7 +62,7 @@ export default function InstrumentsPage() {
 
       <div className="rounded-xl border border-slate-200/80 bg-white shadow-xs overflow-hidden">
         <div className="overflow-x-auto">
-          <table className="w-full text-left text-xs">
+          <table className="w-full text-left text-xs min-w-[750px]">
             <thead className="bg-slate-100/70 border-b border-slate-200 font-heading text-[11px] font-bold uppercase tracking-wider text-pharma-blue">
               <tr>
                 <th className="py-3.5 px-4">Instrument ID</th>

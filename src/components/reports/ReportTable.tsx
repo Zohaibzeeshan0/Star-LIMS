@@ -98,7 +98,7 @@ export function ReportTable({
     <div className="space-y-3 rounded-xl border border-slate-200/80 bg-white shadow-2xs overflow-hidden">
       {/* Table Container */}
       <div className="overflow-x-auto">
-        <table className="w-full text-left text-xs border-collapse">
+        <table className="w-full text-left text-xs border-collapse min-w-[850px]">
           <thead>
             <tr className="border-b border-slate-200 bg-slate-50/80 text-[11px] font-bold uppercase tracking-wider text-slate-600">
               <th

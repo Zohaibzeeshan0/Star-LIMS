@@ -106,8 +106,8 @@ export function ViewPackagingSampleModal({
             <FileText className="h-3.5 w-3.5 text-teal-pharma" />
             Quality Control Physical & Barrier Testing
           </h4>
-          <div className="rounded-lg border border-slate-200 overflow-hidden">
-            <table className="w-full text-left text-xs">
+          <div className="rounded-lg border border-slate-200 overflow-x-auto">
+            <table className="w-full text-left text-xs min-w-[500px]">
               <thead className="bg-slate-100/70 border-b border-slate-200 font-bold uppercase text-[10px] text-slate-600">
                 <tr>
                   <th className="py-2.5 px-3">Test Parameter</th>
@@ -157,7 +157,7 @@ export function ViewPackagingSampleModal({
             <span>Inspection Notes & Disposition Assessment</span>
           </div>
           <p className="text-slate-600 italic leading-relaxed">
-            "{sample.remarks}"
+            &ldquo;{sample.remarks}&rdquo;
           </p>
           <div className="mt-2.5 pt-2 border-t border-slate-200/60 flex items-center justify-between text-[11px] text-slate-500 font-mono">
             <span>Reviewed By: <strong className="text-slate-800">{sample.inspectedBy}</strong></span>

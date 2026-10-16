@@ -333,7 +333,7 @@ export function ResultEntryModal({
 
             <div className="border border-slate-200 rounded-xl overflow-hidden shadow-2xs">
               <div className="overflow-x-auto">
-                <table className="w-full text-left text-xs">
+                <table className="w-full text-left text-xs min-w-[650px]">
                   <thead className="bg-[#123B63] text-white">
                     <tr>
                       <th className="py-2.5 px-3 font-semibold">Parameter</th>

@@ -437,7 +437,7 @@ export function TestWorklistTable({
       {/* Main Worklist Table */}
       <div className="bg-white rounded-xl border border-slate-200/80 shadow-2xs overflow-hidden">
         <div className="overflow-x-auto">
-          <table className="w-full text-left text-xs">
+          <table className="w-full text-left text-xs min-w-[950px]">
             <thead className="bg-[#123B63] text-white">
               <tr>
                 <th

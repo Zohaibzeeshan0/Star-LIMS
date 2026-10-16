@@ -422,7 +422,7 @@ export function RetestTable({
       {/* Main Table Wrapper */}
       <div className="rounded-xl border border-slate-200/80 bg-white shadow-2xs overflow-hidden">
         <div className="overflow-x-auto">
-          <table className="w-full text-left border-collapse">
+          <table className="w-full text-left border-collapse min-w-[900px]">
             <thead>
               <tr className="bg-slate-50/80 border-b border-slate-200 text-[11px] font-bold uppercase tracking-wider text-slate-600">
                 <th className="py-3 px-3.5">

@@ -94,7 +94,7 @@ export default function AuditTrailPage() {
 
         {/* Table */}
         <div className="overflow-x-auto">
-          <table className="w-full text-left text-xs">
+          <table className="w-full text-left text-xs min-w-[850px]">
             <thead className="bg-slate-100/70 border-b border-slate-200 font-heading text-[11px] font-bold uppercase tracking-wider text-pharma-blue">
               <tr>
                 <th className="py-3.5 px-4">Timestamp (UTC)</th>

@@ -74,8 +74,8 @@ export function SampleDetailModal({ sample, open, onClose }: SampleDetailModalPr
             <FileText className="h-3.5 w-3.5 text-teal-pharma" />
             Pharmacopeial Analytical Conformance
           </h4>
-          <div className="rounded-lg border border-slate-200 overflow-hidden">
-            <table className="w-full text-left text-xs">
+          <div className="rounded-lg border border-slate-200 overflow-x-auto">
+            <table className="w-full text-left text-xs min-w-[500px]">
               <thead className="bg-slate-100/70 border-b border-slate-200 text-[10px] uppercase font-bold text-slate-600">
                 <tr>
                   <th className="py-2.5 px-3">Test Parameter</th>

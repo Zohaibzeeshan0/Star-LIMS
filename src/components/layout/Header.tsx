@@ -17,20 +17,20 @@ export function Header({
   subtitle = "Analytical Quality Control"
 }: HeaderProps) {
   return (
-    <header className="sticky top-0 z-30 flex h-16 w-full items-center justify-between border-b border-slate-200/80 bg-white/95 px-6 backdrop-blur-md shadow-xs">
-      <div className="flex items-center gap-4">
+    <header className="sticky top-0 z-30 flex h-16 w-full items-center justify-between border-b border-slate-200/80 bg-white/95 px-3 sm:px-6 backdrop-blur-md shadow-xs">
+      <div className="flex items-center gap-2 sm:gap-4 min-w-0">
         <button
           onClick={onToggleMobile}
-          className="rounded-lg p-1.5 text-pharma-blue hover:bg-slate-100 lg:hidden"
+          className="rounded-lg p-1.5 text-pharma-blue hover:bg-slate-100 lg:hidden shrink-0"
           aria-label="Open sidebar menu"
         >
           <Menu className="h-5 w-5" />
         </button>
-        <div className="flex flex-col">
-          <span className="text-[10px] font-bold uppercase tracking-wider text-teal-pharma">
+        <div className="flex flex-col min-w-0">
+          <span className="text-[9px] sm:text-[10px] font-bold uppercase tracking-wider text-teal-pharma truncate">
             {subtitle}
           </span>
-          <h1 className="font-heading text-lg font-extrabold text-pharma-blue">
+          <h1 className="font-heading text-sm sm:text-lg font-extrabold text-pharma-blue truncate">
             {title}
           </h1>
         </div>

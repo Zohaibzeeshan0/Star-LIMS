@@ -18,7 +18,8 @@ import {
   CheckCircle2,
   Sparkles,
   ClipboardCheck,
-  FileSpreadsheet
+  FileSpreadsheet,
+  X
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -90,30 +91,41 @@ export function Sidebar({ mobileOpen, onCloseMobile }: SidebarProps) {
         )}
       >
         {/* Brand Header */}
-        <div className="flex items-center gap-3.5 border-b border-white/10 px-5 py-5">
-          <div className="relative h-11 w-11 shrink-0 overflow-hidden rounded-lg bg-white shadow-md ring-2 ring-white/20">
-            <Image
-              src="/citi_pharma_logo.jpg"
-              alt="Citi Pharma Emblem"
-              fill
-              className="object-cover"
-              priority
-            />
-          </div>
-          <div className="flex flex-col">
-            <div className="flex items-center gap-1.5">
-              <span className="font-heading text-lg font-extrabold tracking-wide text-white uppercase">
-                Citi Pharma
+        <div className="flex items-center justify-between border-b border-white/10 px-5 py-5">
+          <div className="flex items-center gap-3.5">
+            <div className="relative h-11 w-11 shrink-0 overflow-hidden rounded-lg bg-white shadow-md ring-2 ring-white/20">
+              <Image
+                src="/citi_pharma_logo.jpg"
+                alt="Citi Pharma Emblem"
+                fill
+                className="object-cover"
+                priority
+              />
+            </div>
+            <div className="flex flex-col">
+              <div className="flex items-center gap-1.5">
+                <span className="font-heading text-lg font-extrabold tracking-wide text-white uppercase">
+                  Citi Pharma
+                </span>
+              </div>
+              <span className="text-[11px] font-semibold uppercase tracking-wider text-sky-200">
+                Laboratory Management
+              </span>
+              <span className="mt-0.5 flex items-center gap-1 text-[10px] font-medium tracking-tight text-teal-300">
+                <span className="h-1.5 w-1.5 rounded-full bg-teal-400 animate-pulse" />
+                Quality • Precision • Compliance
               </span>
             </div>
-            <span className="text-[11px] font-semibold uppercase tracking-wider text-sky-200">
-              Laboratory Management
-            </span>
-            <span className="mt-0.5 flex items-center gap-1 text-[10px] font-medium tracking-tight text-teal-300">
-              <span className="h-1.5 w-1.5 rounded-full bg-teal-400 animate-pulse" />
-              Quality • Precision • Compliance
-            </span>
           </div>
+
+          {/* Explicit Mobile Dismiss */}
+          <button
+            onClick={onCloseMobile}
+            className="rounded-lg p-1.5 text-slate-300 hover:bg-white/10 hover:text-white lg:hidden"
+            aria-label="Close sidebar menu"
+          >
+            <X className="h-5 w-5" />
+          </button>
         </div>
 
         {/* Navigation Sections */}

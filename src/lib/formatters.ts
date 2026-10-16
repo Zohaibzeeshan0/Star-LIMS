@@ -64,7 +64,7 @@ export function normalizeStatus(status: string): NormalizedDisposition {
   if (s.includes("released") || s.includes("pass") || s.includes("completed") || s.includes("reviewed")) {
     return "PASS";
   }
-  if (s.includes("quarantine") || s.includes("retest") || s.includes("due soon") || s.includes("overdue") || s.includes("hold")) {
+  if (s.includes("quarantine") || s.includes("retest") || s.includes("scheduled") || s.includes("due soon") || s.includes("overdue") || s.includes("hold")) {
     return "QUARANTINE";
   }
   if (s.includes("fail") || s.includes("reject") || s.includes("oos") || s.includes("out of specification")) {
