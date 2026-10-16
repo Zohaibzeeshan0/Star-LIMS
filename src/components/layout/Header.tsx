@@ -2,7 +2,7 @@
 
 import React from "react";
 import Link from "next/link";
-import { Menu, PlusCircle, Download, ShieldCheck, Activity } from "lucide-react";
+import { Menu, PlusCircle, Download, ShieldCheck, Activity, FileSpreadsheet } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 interface HeaderProps {
@@ -45,6 +45,14 @@ export function Header({
           </span>
           <span>cGMP Node #04 • Active</span>
         </div>
+
+        {/* Quick Reports Link */}
+        <Link href="/reports">
+          <Button variant="outline" size="sm" className="hidden sm:flex gap-1.5 text-xs font-bold text-slate-700 hover:text-pharma-blue border-slate-200">
+            <FileSpreadsheet className="h-3.5 w-3.5 text-teal-pharma" />
+            <span>Reports</span>
+          </Button>
+        </Link>
 
         {/* Quick Intake Button */}
         <Link href="/register">

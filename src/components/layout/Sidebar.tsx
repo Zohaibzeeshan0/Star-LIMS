@@ -17,7 +17,8 @@ import {
   ShieldCheck,
   CheckCircle2,
   Sparkles,
-  ClipboardCheck
+  ClipboardCheck,
+  FileSpreadsheet
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -64,6 +65,7 @@ export function Sidebar({ mobileOpen, onCloseMobile }: SidebarProps) {
     {
       group: "Compliance & QA",
       items: [
+        { name: "Reports & Analytics", href: "/reports", icon: FileSpreadsheet, badge: "Phase 8", badgeColor: "teal" },
         { name: "Certificate of Analysis", href: "/coa", icon: FileCheck2 },
         { name: "Instruments & Calib", href: "/instruments", icon: Gauge, badge: "1 Due", badgeColor: "amber" },
         { name: "21 CFR Part 11 Log", href: "/audit-trail", icon: ShieldCheck },
