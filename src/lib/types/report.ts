@@ -102,3 +102,6 @@ export interface GlobalSearchResult {
   matchedFields: string[]; // e.g. ["Batch Number: PAR-500-B294", "Product Name: Paracetamol"]
   relevanceScore: number;
 }
+
+export type ReportRow = UnifiedReportItem;
+export type ReportMetrics = ReportSummaryMetrics;

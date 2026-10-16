@@ -40,6 +40,14 @@ export interface TestParameter {
   analystNotes?: string;
 }
 
+export interface TestParameterResult {
+  id: string;
+  observedResult: string;
+  status: "Pass" | "Fail" | "Pending";
+  instrumentUsed?: string;
+  analystNotes?: string;
+}
+
 export interface TestWorklistItem {
   id: string; // e.g. "CP-TST-2026-081"
   sampleId: string; // e.g. "CP-PRD-2026-0501" or "CP-RAW-2026-0401"

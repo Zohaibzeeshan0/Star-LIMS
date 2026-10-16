@@ -19,6 +19,8 @@ export type SampleType =
   | "Process Validation Batch"
   | "Sterile Parenteral Release";
 
+export type SampleReleaseType = SampleType;
+
 export type DosageForm =
   | "Tablets"
   | "Capsules"

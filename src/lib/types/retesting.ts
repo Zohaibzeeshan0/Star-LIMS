@@ -23,6 +23,7 @@ export type RetestCategory =
 export type RetestUnit = "kg" | "g" | "Liters" | "Drums" | "Bags";
 
 export type ExpiryUrgency = "OVERDUE" | "DUE_SOON" | "SCHEDULED" | "IN_PROGRESS" | "COMPLETED";
+export type RetestUrgency = ExpiryUrgency;
 
 export interface RetestHistoryRecord {
   id: string;
