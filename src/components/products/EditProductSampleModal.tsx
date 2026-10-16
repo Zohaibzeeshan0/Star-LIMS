@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import {
@@ -18,7 +18,8 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Edit3, Save } from "lucide-react";
+import { Edit3, Save, Loader2, AlertCircle } from "lucide-react";
+import { UnsavedChangesDialog } from "@/components/ui/unsaved-changes-dialog";
 
 interface EditProductSampleModalProps {
   sample: ProductSample | null;
@@ -33,11 +34,14 @@ export function EditProductSampleModal({
   onClose,
   onUpdateSample,
 }: EditProductSampleModalProps) {
+  const [showDiscardConfirm, setShowDiscardConfirm] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+
   const {
     register,
     handleSubmit,
     reset,
-    formState: { errors, isSubmitting },
+    formState: { errors, isSubmitting, isDirty },
   } = useForm<ProductSampleFormValues>({
     resolver: zodResolver(productSampleSchema),
   });
@@ -75,48 +79,63 @@ export function EditProductSampleModal({
 
   if (!sample) return null;
 
-  const onSubmit = (data: ProductSampleFormValues) => {
-    const updated: ProductSample = {
-      ...sample,
-      productName: data.productName,
-      dosageForm: data.dosageForm,
-      strength: data.strength,
-      batchSize: data.batchSize,
-      batchStatus: data.batchStatus,
-      manufacturingDate: data.manufacturingDate,
-      expiryDate: data.expiryDate,
-      receivedDate: data.receivedDate,
-      sampleType: data.sampleType,
-      packagingDetails: data.packagingDetails,
-      productionLine: data.productionLine,
-      targetMarket: data.targetMarket,
-      storageCondition: data.storageCondition,
-      pharmacopeia: data.pharmacopeia,
-      quantitySampled: Number(data.quantitySampled),
-      unit: data.unit,
-      status: data.status,
-      analyst: data.analyst,
-      reviewedBy: data.reviewedBy,
-      remarks: data.remarks,
-      statusHistory: [
-        ...sample.statusHistory,
-        {
-          id: `SH-${Date.now()}`,
-          status: data.status,
-          timestamp: new Date().toISOString().slice(0, 16).replace("T", " "),
-          changedBy: data.analyst,
-          remarks: `Status updated to ${data.status}: ${data.remarks}`
-        }
-      ],
-      updatedAt: new Date().toISOString(),
-    };
+  const handleRequestClose = () => {
+    if (isDirty) {
+      setShowDiscardConfirm(true);
+    } else {
+      onClose();
+    }
+  };
 
-    onUpdateSample(updated);
-    onClose();
+  const onSubmit = async (data: ProductSampleFormValues) => {
+    if (submitting) return;
+    setSubmitting(true);
+    try {
+      const updated: ProductSample = {
+        ...sample,
+        productName: data.productName,
+        dosageForm: data.dosageForm,
+        strength: data.strength,
+        batchSize: data.batchSize,
+        batchStatus: data.batchStatus,
+        manufacturingDate: data.manufacturingDate,
+        expiryDate: data.expiryDate,
+        receivedDate: data.receivedDate,
+        sampleType: data.sampleType,
+        packagingDetails: data.packagingDetails,
+        productionLine: data.productionLine,
+        targetMarket: data.targetMarket,
+        storageCondition: data.storageCondition,
+        pharmacopeia: data.pharmacopeia,
+        quantitySampled: Number(data.quantitySampled),
+        unit: data.unit,
+        status: data.status,
+        analyst: data.analyst,
+        reviewedBy: data.reviewedBy,
+        remarks: data.remarks,
+        statusHistory: [
+          ...sample.statusHistory,
+          {
+            id: `SH-${Date.now()}`,
+            status: data.status,
+            timestamp: new Date().toISOString().slice(0, 16).replace("T", " "),
+            changedBy: data.analyst,
+            remarks: `Status updated to ${data.status}: ${data.remarks}`
+          }
+        ],
+        updatedAt: new Date().toISOString(),
+      };
+
+      onUpdateSample(updated);
+      onClose();
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   return (
-    <Dialog open={open} onOpenChange={onClose}>
+    <>
+      <Dialog open={open} onOpenChange={(v) => !v && handleRequestClose()}>
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <div className="flex items-center gap-2">
@@ -341,7 +360,8 @@ export function EditProductSampleModal({
               type="button"
               variant="outline"
               size="sm"
-              onClick={onClose}
+              onClick={handleRequestClose}
+              disabled={submitting || isSubmitting}
               className="text-xs"
             >
               Cancel
@@ -350,15 +370,30 @@ export function EditProductSampleModal({
               type="submit"
               variant="teal"
               size="sm"
-              disabled={isSubmitting}
+              disabled={submitting || isSubmitting}
               className="text-xs font-bold gap-1.5"
             >
-              <Save className="h-4 w-4" />
-              Save Changes
+              {submitting || isSubmitting ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <Save className="h-4 w-4" />
+              )}
+              <span>{submitting || isSubmitting ? "Saving..." : "Save Changes"}</span>
             </Button>
           </DialogFooter>
         </form>
       </DialogContent>
     </Dialog>
+
+    <UnsavedChangesDialog
+      open={showDiscardConfirm}
+      onConfirmDiscard={() => {
+        setShowDiscardConfirm(false);
+        reset();
+        onClose();
+      }}
+      onCancelStay={() => setShowDiscardConfirm(false)}
+    />
+  </>
   );
 }

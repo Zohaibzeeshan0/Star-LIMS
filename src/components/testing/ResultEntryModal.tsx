@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import { useForm, useFieldArray, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import {
@@ -28,8 +28,10 @@ import {
   Gauge,
   CheckCircle2,
   Info,
-  ShieldAlert
+  ShieldAlert,
+  Loader2
 } from "lucide-react";
+import { UnsavedChangesDialog } from "@/components/ui/unsaved-changes-dialog";
 
 interface ResultEntryModalProps {
   test: TestWorklistItem | null;
@@ -77,6 +79,9 @@ export function ResultEntryModal({
   onClose,
   onSave,
 }: ResultEntryModalProps) {
+  const [submitting, setSubmitting] = useState(false);
+  const [showDiscardConfirm, setShowDiscardConfirm] = useState(false);
+
   const {
     register,
     control,
@@ -84,7 +89,7 @@ export function ResultEntryModal({
     setValue,
     watch,
     reset,
-    formState: { errors, isSubmitting },
+    formState: { errors, isSubmitting, isDirty },
   } = useForm<ResultEntryFormValues>({
     resolver: zodResolver(resultEntryFormSchema),
     defaultValues: {
@@ -137,6 +142,14 @@ export function ResultEntryModal({
     }
   }, [test, reset]);
 
+  const handleRequestClose = () => {
+    if (isDirty) {
+      setShowDiscardConfirm(true);
+    } else {
+      onClose();
+    }
+  };
+
   if (!test) return null;
 
   const watchedParameters = watch("parameters") || [];
@@ -153,9 +166,9 @@ export function ResultEntryModal({
     minAllowed?: number,
     maxAllowed?: number
   ) => {
-    setValue(`parameters.${index}.observedResult`, newValue);
+    setValue(`parameters.${index}.observedResult`, newValue, { shouldDirty: true });
     const newStatus = evaluateResultStatus(inputType, newValue, minAllowed, maxAllowed);
-    setValue(`parameters.${index}.status`, newStatus);
+    setValue(`parameters.${index}.status`, newStatus, { shouldDirty: true });
 
     // If any parameter fails, suggest Out of Specification
     const updatedParams = [...watchedParameters];
@@ -167,38 +180,48 @@ export function ResultEntryModal({
 
     const oosDetected = updatedParams.some((p) => p.status === "Fail");
     if (oosDetected) {
-      setValue("status", "Out of Specification");
+      setValue("status", "Out of Specification", { shouldDirty: true });
     } else if (watchedStatus === "Out of Specification") {
-      setValue("status", "Pending Review");
+      setValue("status", "Pending Review", { shouldDirty: true });
     }
   };
 
-  const onSubmit = (data: ResultEntryFormValues) => {
-    const updatedTest: TestWorklistItem = {
-      ...test,
-      assignedAnalyst: data.assignedAnalyst,
-      testingDate: data.testingDate,
-      instrumentReference: data.instrumentReference,
-      observations: data.observations,
-      analystComments: data.analystComments,
-      status: data.status as TestStatus,
-      isOOS: data.parameters.some((p) => p.status === "Fail"),
-      parameters: data.parameters.map((p, idx) => ({
-        ...test.parameters[idx],
-        observedResult: p.observedResult,
-        status: p.status,
-        instrumentUsed: p.instrumentUsed || test.instrumentReference,
-        analystNotes: p.analystNotes,
-      })),
-      updatedAt: new Date().toISOString(),
-    };
+  const onSubmit = async (data: ResultEntryFormValues) => {
+    if (submitting) return;
+    setSubmitting(true);
 
-    onSave(updatedTest);
-    onClose();
+    try {
+      await new Promise((resolve) => setTimeout(resolve, 500));
+
+      const updatedTest: TestWorklistItem = {
+        ...test,
+        assignedAnalyst: data.assignedAnalyst,
+        testingDate: data.testingDate,
+        instrumentReference: data.instrumentReference,
+        observations: data.observations,
+        analystComments: data.analystComments,
+        status: data.status as TestStatus,
+        isOOS: data.parameters.some((p) => p.status === "Fail"),
+        parameters: data.parameters.map((p, idx) => ({
+          ...test.parameters[idx],
+          observedResult: p.observedResult,
+          status: p.status,
+          instrumentUsed: p.instrumentUsed || test.instrumentReference,
+          analystNotes: p.analystNotes,
+        })),
+        updatedAt: new Date().toISOString(),
+      };
+
+      onSave(updatedTest);
+      onClose();
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   return (
-    <Dialog open={open} onOpenChange={onClose}>
+    <>
+      <Dialog open={open} onOpenChange={(v) => !v && handleRequestClose()}>
       <DialogContent className="max-w-4xl max-h-[92vh] overflow-y-auto">
         <DialogHeader>
           <div className="flex items-center justify-between border-b pb-3">
@@ -483,23 +506,49 @@ export function ResultEntryModal({
             </div>
 
             <div className="flex items-center gap-2">
-              <Button type="button" variant="outline" size="sm" onClick={onClose} className="text-xs">
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                disabled={submitting}
+                onClick={handleRequestClose}
+                className="text-xs"
+              >
                 Cancel
               </Button>
               <Button
                 type="submit"
                 variant="default"
                 size="sm"
-                disabled={isSubmitting}
+                disabled={isSubmitting || submitting}
                 className="bg-pharma-blue hover:bg-pharma-blue/90 text-white font-bold text-xs gap-1.5"
               >
-                <Save className="h-3.5 w-3.5" />
-                Save Analytical Results
+                {submitting ? (
+                  <>
+                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                    Saving Results...
+                  </>
+                ) : (
+                  <>
+                    <Save className="h-3.5 w-3.5" />
+                    Save Analytical Results
+                  </>
+                )}
               </Button>
             </div>
           </DialogFooter>
         </form>
       </DialogContent>
     </Dialog>
+
+    <UnsavedChangesDialog
+      isOpen={showDiscardConfirm}
+      onStay={() => setShowDiscardConfirm(false)}
+      onDiscard={() => {
+        setShowDiscardConfirm(false);
+        onClose();
+      }}
+    />
+  </>
   );
 }

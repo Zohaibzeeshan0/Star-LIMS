@@ -28,8 +28,10 @@ import {
   Calendar,
   Lock,
   Sparkles,
-  Info
+  Info,
+  Loader2
 } from "lucide-react";
+import { UnsavedChangesDialog } from "@/components/ui/unsaved-changes-dialog";
 
 interface TestReviewModalProps {
   test: TestWorklistItem | null;
@@ -46,6 +48,8 @@ export function TestReviewModal({
 }: TestReviewModalProps) {
   const [signatureChecked, setSignatureChecked] = useState(false);
   const [signatureError, setSignatureError] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+  const [showDiscardConfirm, setShowDiscardConfirm] = useState(false);
 
   const {
     register,
@@ -53,7 +57,7 @@ export function TestReviewModal({
     handleSubmit,
     setValue,
     watch,
-    formState: { errors, isSubmitting },
+    formState: { errors, isSubmitting, isDirty },
   } = useForm<TestReviewFormValues>({
     resolver: zodResolver(testReviewFormSchema),
     defaultValues: {
@@ -66,34 +70,51 @@ export function TestReviewModal({
     },
   });
 
+  const handleRequestClose = () => {
+    if (isDirty) {
+      setShowDiscardConfirm(true);
+    } else {
+      onClose();
+    }
+  };
+
   if (!test) return null;
 
   const watchedDisposition = watch("disposition");
   const hasFailParams = test.parameters.some((p) => p.status === "Fail");
 
-  const onSubmit = (data: TestReviewFormValues) => {
+  const onSubmit = async (data: TestReviewFormValues) => {
     if (!signatureChecked) {
       setSignatureError("Electronic verification statement must be acknowledged.");
       return;
     }
+    if (submitting) return;
+    setSubmitting(true);
     setSignatureError("");
 
-    const updatedTest: TestWorklistItem = {
-      ...test,
-      reviewedBy: data.reviewedBy,
-      reviewDate: data.reviewDate,
-      reviewComments: data.reviewComments,
-      status: data.disposition as TestStatus,
-      isOOS: data.disposition === "Out of Specification" || hasFailParams,
-      updatedAt: new Date().toISOString(),
-    };
+    try {
+      await new Promise((resolve) => setTimeout(resolve, 500));
 
-    onSaveReview(updatedTest);
-    onClose();
+      const updatedTest: TestWorklistItem = {
+        ...test,
+        reviewedBy: data.reviewedBy,
+        reviewDate: data.reviewDate,
+        reviewComments: data.reviewComments,
+        status: data.disposition as TestStatus,
+        isOOS: data.disposition === "Out of Specification" || hasFailParams,
+        updatedAt: new Date().toISOString(),
+      };
+
+      onSaveReview(updatedTest);
+      onClose();
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   return (
-    <Dialog open={open} onOpenChange={onClose}>
+    <>
+      <Dialog open={open} onOpenChange={(v) => !v && handleRequestClose()}>
       <DialogContent className="max-w-4xl max-h-[92vh] overflow-y-auto">
         <DialogHeader>
           <div className="flex items-center justify-between border-b pb-3">
@@ -335,17 +356,29 @@ export function TestReviewModal({
             </div>
 
             <div className="flex items-center gap-2">
-              <Button type="button" variant="outline" size="sm" onClick={onClose} className="text-xs">
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                disabled={submitting}
+                onClick={handleRequestClose}
+                className="text-xs"
+              >
                 Cancel
               </Button>
               <Button
                 type="submit"
                 variant={watchedDisposition === "Out of Specification" ? "destructive" : "teal"}
                 size="sm"
-                disabled={isSubmitting}
+                disabled={isSubmitting || submitting}
                 className="font-bold text-xs gap-1.5"
               >
-                {watchedDisposition === "Out of Specification" ? (
+                {submitting ? (
+                  <>
+                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                    Signing Dossier...
+                  </>
+                ) : watchedDisposition === "Out of Specification" ? (
                   <>
                     <AlertTriangle className="h-3.5 w-3.5" />
                     Confirm OOS Disposition
@@ -362,5 +395,15 @@ export function TestReviewModal({
         </form>
       </DialogContent>
     </Dialog>
+
+    <UnsavedChangesDialog
+      isOpen={showDiscardConfirm}
+      onStay={() => setShowDiscardConfirm(false)}
+      onDiscard={() => {
+        setShowDiscardConfirm(false);
+        onClose();
+      }}
+    />
+  </>
   );
 }

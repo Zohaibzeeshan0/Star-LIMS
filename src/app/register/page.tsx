@@ -20,8 +20,10 @@ import {
   FileText,
   ShieldCheck,
   FlaskConical,
-  ArrowRight
+  ArrowRight,
+  Loader2
 } from "lucide-react";
+import { UnsavedChangesDialog } from "@/components/ui/unsaved-changes-dialog";
 
 const AVAILABLE_TESTS = [
   { name: "Assay (% Label Claim by HPLC / GC)", spec: "98.0 - 102.0 %" },
@@ -37,13 +39,15 @@ const AVAILABLE_TESTS = [
 export default function RegisterSamplePage() {
   const router = useRouter();
   const [successSample, setSuccessSample] = useState<SampleRecord | null>(null);
+  const [submitting, setSubmitting] = useState(false);
+  const [showDiscardConfirm, setShowDiscardConfirm] = useState(false);
 
   const {
     register,
     handleSubmit,
     watch,
     setValue,
-    formState: { errors, isSubmitting }
+    formState: { errors, isSubmitting, isDirty }
   } = useForm<SampleRegistrationFormValues>({
     resolver: zodResolver(sampleRegistrationSchema),
     defaultValues: {
@@ -65,54 +69,65 @@ export default function RegisterSamplePage() {
     if (selectedTests.includes(testName)) {
       setValue(
         "selectedTests",
-        selectedTests.filter((t) => t !== testName)
+        selectedTests.filter((t) => t !== testName),
+        { shouldDirty: true }
       );
     } else {
-      setValue("selectedTests", [...selectedTests, testName]);
+      setValue("selectedTests", [...selectedTests, testName], { shouldDirty: true });
     }
   };
 
   const onSubmit = async (data: SampleRegistrationFormValues) => {
-    // Generate new LIMS ID
-    const sampleId = `CP-REG-2026-${String(Math.floor(Math.random() * 8999 + 1000))}`;
+    if (submitting) return;
+    setSubmitting(true);
 
-    const newRecord: SampleRecord = {
-      id: sampleId,
-      batchNumber: data.batchNumber.toUpperCase(),
-      productName: data.productName,
-      category: data.category,
-      pharmacopeia: data.pharmacopeia,
-      mfgDate: data.mfgDate,
-      expDate: data.expDate,
-      retestDate: data.retestDate,
-      batchSize: data.batchSize,
-      sampleQuantity: data.sampleQuantity,
-      storageCondition: data.storageCondition,
-      priority: data.priority,
-      analyst: data.analyst,
-      analystDepartment: "QC Department",
-      receivedDate: new Date().toISOString().slice(0, 10),
-      targetSpecification: data.targetSpecification,
-      observedSummary: "Under Intake Queue • Awaiting Lab Stage",
-      status: "In Testing",
-      statusNotes: "Sample successfully registered into Citi Pharma Chain of Custody.",
-      tests: data.selectedTests.map((tName, i) => {
-        const found = AVAILABLE_TESTS.find((at) => at.name === tName);
-        return {
-          id: `T${i + 1}`,
-          name: tName,
-          specification: found ? found.spec : "Per protocol",
-          observedResult: "Pending Analysis",
-          passed: true
-        };
-      }),
-      reviewedBy: "Pending QC Review",
-      reviewedDate: "Pending"
-    };
+    try {
+      // Simulate real-world network latency
+      await new Promise((resolve) => setTimeout(resolve, 600));
 
-    // Prepend to MOCK_SAMPLES in-memory
-    MOCK_SAMPLES.unshift(newRecord);
-    setSuccessSample(newRecord);
+      // Generate new LIMS ID
+      const sampleId = `CP-REG-2026-${String(Math.floor(Math.random() * 8999 + 1000))}`;
+
+      const newRecord: SampleRecord = {
+        id: sampleId,
+        batchNumber: data.batchNumber.toUpperCase(),
+        productName: data.productName,
+        category: data.category,
+        pharmacopeia: data.pharmacopeia,
+        mfgDate: data.mfgDate,
+        expDate: data.expDate,
+        retestDate: data.retestDate,
+        batchSize: data.batchSize,
+        sampleQuantity: data.sampleQuantity,
+        storageCondition: data.storageCondition,
+        priority: data.priority,
+        analyst: data.analyst,
+        analystDepartment: "QC Department",
+        receivedDate: new Date().toISOString().slice(0, 10),
+        targetSpecification: data.targetSpecification,
+        observedSummary: "Under Intake Queue • Awaiting Lab Stage",
+        status: "In Testing",
+        statusNotes: "Sample successfully registered into Citi Pharma Chain of Custody.",
+        tests: data.selectedTests.map((tName, i) => {
+          const found = AVAILABLE_TESTS.find((at) => at.name === tName);
+          return {
+            id: `T${i + 1}`,
+            name: tName,
+            specification: found ? found.spec : "Per protocol",
+            observedResult: "Pending Analysis",
+            passed: true
+          };
+        }),
+        reviewedBy: "Pending QC Review",
+        reviewedDate: "Pending"
+      };
+
+      // Prepend to MOCK_SAMPLES in-memory
+      MOCK_SAMPLES.unshift(newRecord);
+      setSuccessSample(newRecord);
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   return (
@@ -424,22 +439,48 @@ export default function RegisterSamplePage() {
             <Button
               type="button"
               variant="outline"
-              onClick={() => router.push("/samples")}
+              disabled={submitting || isSubmitting}
+              onClick={() => {
+                if (isDirty) {
+                  setShowDiscardConfirm(true);
+                } else {
+                  router.push("/samples");
+                }
+              }}
             >
               Cancel
             </Button>
             <Button
               type="submit"
               variant="teal"
-              disabled={isSubmitting}
+              disabled={isSubmitting || submitting}
               className="gap-2 font-bold px-6 shadow-sm"
             >
-              <CheckCircle2 className="h-4 w-4" />
-              Complete Registration & Assign
+              {submitting || isSubmitting ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  Registering Sample...
+                </>
+              ) : (
+                <>
+                  <CheckCircle2 className="h-4 w-4" />
+                  Complete Registration & Assign
+                </>
+              )}
             </Button>
           </div>
         </form>
       )}
+
+      {/* Unsaved Changes Confirmation Modal */}
+      <UnsavedChangesDialog
+        isOpen={showDiscardConfirm}
+        onStay={() => setShowDiscardConfirm(false)}
+        onDiscard={() => {
+          setShowDiscardConfirm(false);
+          router.push("/samples");
+        }}
+      />
     </div>
   );
 }

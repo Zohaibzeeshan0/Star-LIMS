@@ -1,6 +1,6 @@
 "use client";
 
-import React from "react";
+import React, { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import {
@@ -18,7 +18,8 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { PlusCircle, Pill } from "lucide-react";
+import { PlusCircle, Pill, Loader2, AlertCircle } from "lucide-react";
+import { UnsavedChangesDialog } from "@/components/ui/unsaved-changes-dialog";
 
 interface AddProductSampleModalProps {
   open: boolean;
@@ -32,12 +33,14 @@ export function AddProductSampleModal({
   onAddSample,
 }: AddProductSampleModalProps) {
   const defaultSampleId = `CP-PRD-2026-${String(Math.floor(Math.random() * 899 + 515)).padStart(3, "0")}`;
+  const [showDiscardConfirm, setShowDiscardConfirm] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
 
   const {
     register,
     handleSubmit,
     reset,
-    formState: { errors, isSubmitting },
+    formState: { errors, isSubmitting, isDirty },
   } = useForm<ProductSampleFormValues>({
     resolver: zodResolver(productSampleSchema),
     defaultValues: {
@@ -68,8 +71,19 @@ export function AddProductSampleModal({
     },
   });
 
-  const onSubmit = (data: ProductSampleFormValues) => {
-    const newSample: ProductSample = {
+  const handleRequestClose = () => {
+    if (isDirty) {
+      setShowDiscardConfirm(true);
+    } else {
+      onClose();
+    }
+  };
+
+  const onSubmit = async (data: ProductSampleFormValues) => {
+    if (submitting) return;
+    setSubmitting(true);
+    try {
+      const newSample: ProductSample = {
       id: data.id,
       productName: data.productName,
       productCode: data.productCode.toUpperCase(),
@@ -142,13 +156,17 @@ export function AddProductSampleModal({
       updatedAt: new Date().toISOString(),
     };
 
-    onAddSample(newSample);
-    reset();
-    onClose();
+      onAddSample(newSample);
+      reset();
+      onClose();
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   return (
-    <Dialog open={open} onOpenChange={onClose}>
+    <>
+      <Dialog open={open} onOpenChange={(v) => !v && handleRequestClose()}>
       <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <div className="flex items-center gap-2">
@@ -519,7 +537,8 @@ export function AddProductSampleModal({
               type="button"
               variant="outline"
               size="sm"
-              onClick={onClose}
+              onClick={handleRequestClose}
+              disabled={submitting || isSubmitting}
               className="text-xs"
             >
               Cancel
@@ -528,15 +547,30 @@ export function AddProductSampleModal({
               type="submit"
               variant="teal"
               size="sm"
-              disabled={isSubmitting}
+              disabled={submitting || isSubmitting}
               className="text-xs font-bold gap-1.5"
             >
-              <PlusCircle className="h-4 w-4" />
-              Add Product Sample
+              {submitting || isSubmitting ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <PlusCircle className="h-4 w-4" />
+              )}
+              <span>{submitting || isSubmitting ? "Adding Sample..." : "Add Product Sample"}</span>
             </Button>
           </DialogFooter>
         </form>
       </DialogContent>
     </Dialog>
+
+    <UnsavedChangesDialog
+      open={showDiscardConfirm}
+      onConfirmDiscard={() => {
+        setShowDiscardConfirm(false);
+        reset();
+        onClose();
+      }}
+      onCancelStay={() => setShowDiscardConfirm(false)}
+    />
+  </>
   );
 }

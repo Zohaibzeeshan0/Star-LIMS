@@ -1,6 +1,6 @@
 "use client";
 
-import React from "react";
+import React, { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import {
@@ -18,7 +18,8 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { PlusCircle, RotateCcw } from "lucide-react";
+import { PlusCircle, RotateCcw, Loader2, AlertCircle } from "lucide-react";
+import { UnsavedChangesDialog } from "@/components/ui/unsaved-changes-dialog";
 
 interface AddRetestSampleModalProps {
   open: boolean;
@@ -32,12 +33,14 @@ export function AddRetestSampleModal({
   onAddSample,
 }: AddRetestSampleModalProps) {
   const defaultSampleId = `CP-RET-2026-${String(Math.floor(Math.random() * 899 + 15)).padStart(3, "0")}`;
+  const [showDiscardConfirm, setShowDiscardConfirm] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
 
   const {
     register,
     handleSubmit,
     reset,
-    formState: { errors, isSubmitting },
+    formState: { errors, isSubmitting, isDirty },
   } = useForm<RetestSampleFormValues>({
     resolver: zodResolver(retestSampleSchema),
     defaultValues: {
@@ -70,8 +73,19 @@ export function AddRetestSampleModal({
     },
   });
 
-  const onSubmit = (data: RetestSampleFormValues) => {
-    const newSample: RetestSample = {
+  const handleRequestClose = () => {
+    if (isDirty) {
+      setShowDiscardConfirm(true);
+    } else {
+      onClose();
+    }
+  };
+
+  const onSubmit = async (data: RetestSampleFormValues) => {
+    if (submitting) return;
+    setSubmitting(true);
+    try {
+      const newSample: RetestSample = {
       id: data.id,
       rawMaterialSampleId: data.rawMaterialSampleId.toUpperCase(),
       materialCode: data.materialCode.toUpperCase(),
@@ -152,13 +166,17 @@ export function AddRetestSampleModal({
       updatedAt: new Date().toISOString(),
     };
 
-    onAddSample(newSample);
-    reset();
-    onClose();
+      onAddSample(newSample);
+      reset();
+      onClose();
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   return (
-    <Dialog open={open} onOpenChange={onClose}>
+    <>
+      <Dialog open={open} onOpenChange={(v) => !v && handleRequestClose()}>
       <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <div className="flex items-center gap-2">
@@ -503,7 +521,8 @@ export function AddRetestSampleModal({
               type="button"
               variant="outline"
               size="sm"
-              onClick={onClose}
+              onClick={handleRequestClose}
+              disabled={submitting || isSubmitting}
               className="text-xs"
             >
               Cancel
@@ -512,15 +531,30 @@ export function AddRetestSampleModal({
               type="submit"
               variant="teal"
               size="sm"
-              disabled={isSubmitting}
+              disabled={submitting || isSubmitting}
               className="text-xs font-bold gap-1.5"
             >
-              <PlusCircle className="h-4 w-4" />
-              Add Retest Schedule
+              {submitting || isSubmitting ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <PlusCircle className="h-4 w-4" />
+              )}
+              <span>{submitting || isSubmitting ? "Adding Schedule..." : "Add Retest Schedule"}</span>
             </Button>
           </DialogFooter>
         </form>
       </DialogContent>
     </Dialog>
+
+    <UnsavedChangesDialog
+      open={showDiscardConfirm}
+      onConfirmDiscard={() => {
+        setShowDiscardConfirm(false);
+        reset();
+        onClose();
+      }}
+      onCancelStay={() => setShowDiscardConfirm(false)}
+    />
+  </>
   );
 }

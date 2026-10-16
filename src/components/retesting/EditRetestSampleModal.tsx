@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import {
@@ -18,7 +18,8 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Edit3, Save } from "lucide-react";
+import { Edit3, Save, Loader2, AlertCircle } from "lucide-react";
+import { UnsavedChangesDialog } from "@/components/ui/unsaved-changes-dialog";
 
 interface EditRetestSampleModalProps {
   sample: RetestSample | null;
@@ -33,11 +34,14 @@ export function EditRetestSampleModal({
   onClose,
   onUpdateSample,
 }: EditRetestSampleModalProps) {
+  const [showDiscardConfirm, setShowDiscardConfirm] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+
   const {
     register,
     handleSubmit,
     reset,
-    formState: { errors, isSubmitting },
+    formState: { errors, isSubmitting, isDirty },
   } = useForm<RetestSampleFormValues>({
     resolver: zodResolver(retestSampleSchema),
   });
@@ -77,35 +81,50 @@ export function EditRetestSampleModal({
 
   if (!sample) return null;
 
-  const onSubmit = (data: RetestSampleFormValues) => {
-    const updated: RetestSample = {
-      ...sample,
-      warehouseLocation: data.warehouseLocation,
-      remainingStock: Number(data.remainingStock),
-      unit: data.unit,
-      containersCount: Number(data.containersCount),
-      previousTestDate: data.previousTestDate,
-      lastRetestDate: data.lastRetestDate,
-      nextRetestDueDate: data.nextRetestDueDate,
-      extendedRetestDate: data.extendedRetestDate || undefined,
-      retestCycleNumber: Number(data.retestCycleNumber),
-      extensionMonthsGranted: data.extensionMonthsGranted ? Number(data.extensionMonthsGranted) : undefined,
-      status: data.status,
-      retestReason: data.retestReason,
-      pharmacopeia: data.pharmacopeia,
-      storageCondition: data.storageCondition,
-      analyst: data.analyst,
-      reviewedBy: data.reviewedBy,
-      remarks: data.remarks,
-      updatedAt: new Date().toISOString(),
-    };
+  const handleRequestClose = () => {
+    if (isDirty) {
+      setShowDiscardConfirm(true);
+    } else {
+      onClose();
+    }
+  };
 
-    onUpdateSample(updated);
-    onClose();
+  const onSubmit = async (data: RetestSampleFormValues) => {
+    if (submitting) return;
+    setSubmitting(true);
+    try {
+      const updated: RetestSample = {
+        ...sample,
+        warehouseLocation: data.warehouseLocation,
+        remainingStock: Number(data.remainingStock),
+        unit: data.unit,
+        containersCount: Number(data.containersCount),
+        previousTestDate: data.previousTestDate,
+        lastRetestDate: data.lastRetestDate,
+        nextRetestDueDate: data.nextRetestDueDate,
+        extendedRetestDate: data.extendedRetestDate || undefined,
+        retestCycleNumber: Number(data.retestCycleNumber),
+        extensionMonthsGranted: data.extensionMonthsGranted ? Number(data.extensionMonthsGranted) : undefined,
+        status: data.status,
+        retestReason: data.retestReason,
+        pharmacopeia: data.pharmacopeia,
+        storageCondition: data.storageCondition,
+        analyst: data.analyst,
+        reviewedBy: data.reviewedBy,
+        remarks: data.remarks,
+        updatedAt: new Date().toISOString(),
+      };
+
+      onUpdateSample(updated);
+      onClose();
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   return (
-    <Dialog open={open} onOpenChange={onClose}>
+    <>
+      <Dialog open={open} onOpenChange={(v) => !v && handleRequestClose()}>
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <div className="flex items-center gap-2">
@@ -310,7 +329,8 @@ export function EditRetestSampleModal({
               type="button"
               variant="outline"
               size="sm"
-              onClick={onClose}
+              onClick={handleRequestClose}
+              disabled={submitting || isSubmitting}
               className="text-xs"
             >
               Cancel
@@ -319,15 +339,30 @@ export function EditRetestSampleModal({
               type="submit"
               variant="teal"
               size="sm"
-              disabled={isSubmitting}
+              disabled={submitting || isSubmitting}
               className="text-xs font-bold gap-1.5"
             >
-              <Save className="h-4 w-4" />
-              Save Surveillance Updates
+              {submitting || isSubmitting ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <Save className="h-4 w-4" />
+              )}
+              <span>{submitting || isSubmitting ? "Saving..." : "Save Surveillance Updates"}</span>
             </Button>
           </DialogFooter>
         </form>
       </DialogContent>
     </Dialog>
+
+    <UnsavedChangesDialog
+      open={showDiscardConfirm}
+      onConfirmDiscard={() => {
+        setShowDiscardConfirm(false);
+        reset();
+        onClose();
+      }}
+      onCancelStay={() => setShowDiscardConfirm(false)}
+    />
+  </>
   );
 }

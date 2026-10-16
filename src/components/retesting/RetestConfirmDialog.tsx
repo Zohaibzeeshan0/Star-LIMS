@@ -10,7 +10,7 @@ import {
   DialogDescription,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { AlertTriangle, CheckCircle2, XCircle, Info, Sparkles } from "lucide-react";
+import { AlertTriangle, CheckCircle2, XCircle, Info, Sparkles, Loader2 } from "lucide-react";
 
 interface RetestConfirmDialogProps {
   open: boolean;
@@ -19,6 +19,7 @@ interface RetestConfirmDialogProps {
   confirmLabel?: string;
   cancelLabel?: string;
   variant?: "danger" | "teal" | "warning" | "default";
+  loading?: boolean;
   onConfirm: () => void;
   onCancel: () => void;
 }
@@ -30,6 +31,7 @@ export function RetestConfirmDialog({
   confirmLabel = "Confirm Action",
   cancelLabel = "Cancel",
   variant = "default",
+  loading = false,
   onConfirm,
   onCancel,
 }: RetestConfirmDialogProps) {
@@ -83,16 +85,21 @@ export function RetestConfirmDialog({
         </div>
 
         <DialogFooter className="gap-2 sm:gap-0">
-          <Button variant="outline" size="sm" onClick={onCancel}>
+          <Button variant="outline" size="sm" onClick={onCancel} disabled={loading}>
             {cancelLabel}
           </Button>
           <Button
             variant={getButtonVariant() as any}
             size="sm"
             onClick={onConfirm}
+            disabled={loading}
             className="font-bold gap-1.5"
           >
-            {variant === "teal" && <Sparkles className="h-3.5 w-3.5" />}
+            {loading ? (
+              <Loader2 className="h-3.5 w-3.5 animate-spin" />
+            ) : (
+              variant === "teal" && <Sparkles className="h-3.5 w-3.5" />
+            )}
             {confirmLabel}
           </Button>
         </DialogFooter>
