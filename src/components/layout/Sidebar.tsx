@@ -122,8 +122,8 @@ export function Sidebar({ mobileOpen, onCloseMobile }: SidebarProps) {
               <div className="mt-1 space-y-0.5">
                 {section.items.map((item) => {
                   const isActive =
-                    item.href === "/"
-                      ? pathname === "/"
+                    item.href === "/" || item.href === "/samples"
+                      ? pathname === item.href
                       : pathname.startsWith(item.href);
                   const Icon = item.icon;
 
