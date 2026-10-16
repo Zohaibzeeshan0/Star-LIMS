@@ -16,7 +16,8 @@ import {
   Gauge,
   ShieldCheck,
   CheckCircle2,
-  Sparkles
+  Sparkles,
+  ClipboardCheck
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -46,6 +47,7 @@ export function Sidebar({ mobileOpen, onCloseMobile }: SidebarProps) {
       group: "Core Laboratory",
       items: [
         { name: "QC Dashboard", href: "/", icon: LayoutDashboard },
+        { name: "QC Test Worklist", href: "/testing", icon: ClipboardCheck, badge: "12", badgeColor: "teal" },
         { name: "Master Sample Records", href: "/samples", icon: FlaskConical, badge: "12" },
         { name: "Sample Registration", href: "/register", icon: PlusCircle },
       ]
