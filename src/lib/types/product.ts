@@ -1,7 +1,7 @@
 /**
  * Citi Pharma Laboratory Information Management System (Star-LIMS)
  * Finished Products, IPQC & Stability Testing Types (Phase 6)
- * Conforming to cGMP, ICH Q1A(R2) Stability, and USP/BP Finished Product Monographs
+ * Conforming to cGMP, DRAP Finished Product Monographs, and ICH Quality Guidelines
  */
 
 export type ProductStatus =
@@ -12,23 +12,37 @@ export type ProductStatus =
   | "Quarantine"
   | "Rejected";
 
-export type TestingStage =
-  | "Finished Product Release (FPR)"
+export type SampleType =
+  | "Finished Product Release"
   | "In-Process Quality Control (IPQC)"
-  | "ICH Stability (Accelerated 40°C/75% RH)"
-  | "ICH Stability (Real-Time 25°C/60% RH)"
-  | "Annual Product Quality Review (PQR)"
+  | "ICH Stability Testing"
+  | "Process Validation Batch"
   | "Sterile Parenteral Release";
 
 export type DosageForm =
-  | "Film-Coated Tablets"
-  | "Extended-Release Tablets"
-  | "Hard Gelatin Capsules"
-  | "Oral Liquid / Syrup / Suspension"
-  | "Sterile Lyophilized Vial / Ampoule"
-  | "Topical Cream / Ointment";
+  | "Tablets"
+  | "Capsules"
+  | "Syrups"
+  | "Suspensions"
+  | "Creams"
+  | "Injectables / Ampoules";
+
+export type BatchStatus =
+  | "Commercial Batch"
+  | "Validation Batch"
+  | "Pilot Batch"
+  | "Stability Chamber Batch"
+  | "Quarantine Hold";
 
 export type ProductUnit = "Tablets" | "Capsules" | "Bottles" | "Vials" | "Tubes" | "Packs";
+
+export interface StatusHistoryEntry {
+  id: string;
+  status: ProductStatus;
+  timestamp: string;
+  changedBy: string;
+  remarks: string;
+}
 
 export interface ProductTest {
   id: string;
@@ -40,28 +54,29 @@ export interface ProductTest {
 }
 
 export interface ProductSample {
-  id: string; // e.g. "CP-PRD-2026-0501"
+  id: string; // Sample ID e.g. "CP-PRD-2026-0501"
+  productName: string; // e.g. "Ciprocit Film-Coated Tablets"
   productCode: string; // e.g. "FP-TAB-0104"
-  productName: string; // e.g. "Ciprocit 500mg Film-Coated Tablets"
+  dosageForm: DosageForm; // e.g. "Tablets", "Capsules", "Syrups", "Suspensions", "Creams", "Injectables / Ampoules"
+  strength: string; // e.g. "500 mg", "120 mg/5 mL", "1% w/w", "1 g/vial"
   genericName: string; // e.g. "Ciprofloxacin Hydrochloride BP"
-  dosageForm: DosageForm;
-  stage: TestingStage;
-  stabilityInterval?: string; // e.g. "Initial (0-Mo)", "3-Month Pull", "6-Month Pull", "12-Month Pull", "24-Month Pull"
-  
-  // Batch & Manufacturing Details
   batchNumber: string; // e.g. "CPT-500-26A"
   batchSize: string; // e.g. "250,000 Tablets"
-  productionLine: string; // e.g. "Solid Oral Line-1 (Kilian Tablet Press)"
+  batchStatus: BatchStatus; // "Commercial Batch" | "Validation Batch" | "Pilot Batch" | etc.
+  
+  // Dates (Explicit user requirements)
   manufacturingDate: string; // YYYY-MM-DD
   expiryDate: string; // YYYY-MM-DD
+  receivedDate: string; // YYYY-MM-DD
   samplingDate: string; // YYYY-MM-DD
-  samplingStage: string; // e.g. "Final Secondary Packaged Stock", "Core Compression Stage", "Coating Pan Discharge"
   
-  // Packaging & Distribution
-  packagingPresentation: string; // e.g. "10 x 10 Alu-PVC Blisters per Printed Carton"
+  // Sampling & Packaging details
+  sampleType: SampleType; // "Finished Product Release", "In-Process Quality Control (IPQC)", etc.
+  packagingDetails: string; // e.g. "10 x 10 Alu-PVC Blisters per Printed Unit Carton"
+  productionLine: string; // e.g. "Solid Oral Facility (Line-1 Fette Press)"
   targetMarket: "Domestic (DRAP)" | "Export (GCC / MENA)" | "Institutional Hospital Supply";
   
-  // Storage & Monograph
+  // Storage & Pharmacopeia
   storageCondition: string; // e.g. "Store below 30°C in a dry place, protect from light"
   pharmacopeia: "BP 2026" | "USP 48-NF 43" | "Ph. Eur. 11.0" | "In-House Validated";
   
@@ -76,8 +91,9 @@ export interface ProductSample {
   qaReleaseDate?: string;
   remarks: string;
   
-  // Analytical Battery
+  // Testing Summaries & Mock Status History (Explicit user requirement)
   tests: ProductTest[];
+  statusHistory: StatusHistoryEntry[];
   
   createdAt: string;
   updatedAt: string;
@@ -85,8 +101,10 @@ export interface ProductSample {
 
 export interface ProductFilterState {
   searchQuery: string;
-  status: ProductStatus | "ALL";
   dosageForm: DosageForm | "ALL";
-  stage: TestingStage | "ALL";
-  productionLine: string;
+  product: string;
+  batchStatus: BatchStatus | "ALL";
+  sampleStatus: ProductStatus | "ALL";
+  dateFrom: string;
+  dateTo: string;
 }

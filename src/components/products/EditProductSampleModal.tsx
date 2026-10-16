@@ -46,20 +46,20 @@ export function EditProductSampleModal({
     if (sample) {
       reset({
         id: sample.id,
-        productCode: sample.productCode,
         productName: sample.productName,
-        genericName: sample.genericName,
+        productCode: sample.productCode,
         dosageForm: sample.dosageForm,
-        stage: sample.stage,
-        stabilityInterval: sample.stabilityInterval || "",
+        strength: sample.strength,
+        genericName: sample.genericName,
         batchNumber: sample.batchNumber,
         batchSize: sample.batchSize,
-        productionLine: sample.productionLine,
+        batchStatus: sample.batchStatus,
         manufacturingDate: sample.manufacturingDate,
         expiryDate: sample.expiryDate,
-        samplingDate: sample.samplingDate,
-        samplingStage: sample.samplingStage,
-        packagingPresentation: sample.packagingPresentation,
+        receivedDate: sample.receivedDate,
+        sampleType: sample.sampleType,
+        packagingDetails: sample.packagingDetails,
+        productionLine: sample.productionLine,
         targetMarket: sample.targetMarket,
         storageCondition: sample.storageCondition,
         pharmacopeia: sample.pharmacopeia,
@@ -78,12 +78,17 @@ export function EditProductSampleModal({
   const onSubmit = (data: ProductSampleFormValues) => {
     const updated: ProductSample = {
       ...sample,
-      stage: data.stage,
-      stabilityInterval: data.stabilityInterval || undefined,
+      productName: data.productName,
+      dosageForm: data.dosageForm,
+      strength: data.strength,
       batchSize: data.batchSize,
+      batchStatus: data.batchStatus,
+      manufacturingDate: data.manufacturingDate,
+      expiryDate: data.expiryDate,
+      receivedDate: data.receivedDate,
+      sampleType: data.sampleType,
+      packagingDetails: data.packagingDetails,
       productionLine: data.productionLine,
-      samplingStage: data.samplingStage,
-      packagingPresentation: data.packagingPresentation,
       targetMarket: data.targetMarket,
       storageCondition: data.storageCondition,
       pharmacopeia: data.pharmacopeia,
@@ -93,6 +98,16 @@ export function EditProductSampleModal({
       analyst: data.analyst,
       reviewedBy: data.reviewedBy,
       remarks: data.remarks,
+      statusHistory: [
+        ...sample.statusHistory,
+        {
+          id: `SH-${Date.now()}`,
+          status: data.status,
+          timestamp: new Date().toISOString().slice(0, 16).replace("T", " "),
+          changedBy: data.analyst,
+          remarks: `Status updated to ${data.status}: ${data.remarks}`
+        }
+      ],
       updatedAt: new Date().toISOString(),
     };
 
@@ -110,10 +125,10 @@ export function EditProductSampleModal({
             </div>
             <div>
               <DialogTitle className="font-heading text-lg font-bold text-pharma-blue">
-                Edit Product Batch Record: {sample.id}
+                Edit Product Sample: {sample.id}
               </DialogTitle>
               <DialogDescription className="text-xs text-slate-500">
-                Update batch release parameters, stability intervals, QC disposition, and QA approvals.
+                Update batch release parameters, packaging details, QC disposition, and QA approvals.
               </DialogDescription>
             </div>
           </div>
@@ -127,7 +142,7 @@ export function EditProductSampleModal({
                 <span className="font-bold text-slate-800">{sample.productName}</span>
                 <span className="text-slate-400 font-mono ml-2">({sample.productCode})</span>
                 <p className="text-slate-500 mt-0.5">
-                  Lot: <span className="font-mono font-semibold text-pharma-blue">{sample.batchNumber}</span> | Generic: {sample.genericName}
+                  Lot: <span className="font-mono font-semibold text-pharma-blue">{sample.batchNumber}</span> | Strength: {sample.strength}
                 </p>
               </div>
               <span className="text-[10px] uppercase font-bold text-slate-400 bg-white px-2 py-0.5 rounded border">
@@ -139,45 +154,121 @@ export function EditProductSampleModal({
           {/* Hidden Fields for Validation */}
           <input type="hidden" {...register("id")} />
           <input type="hidden" {...register("productCode")} />
-          <input type="hidden" {...register("productName")} />
           <input type="hidden" {...register("genericName")} />
-          <input type="hidden" {...register("dosageForm")} />
           <input type="hidden" {...register("batchNumber")} />
-          <input type="hidden" {...register("manufacturingDate")} />
-          <input type="hidden" {...register("expiryDate")} />
-          <input type="hidden" {...register("samplingDate")} />
 
-          {/* Testing Stream & Stability Pull */}
+          {/* Product Name & Strength */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
               <label className="text-xs font-semibold text-slate-700">
-                Testing Stream / Stage <span className="text-red-500">*</span>
+                Product Name <span className="text-red-500">*</span>
+              </label>
+              <Input
+                {...register("productName")}
+                className="text-xs mt-1"
+              />
+            </div>
+
+            <div>
+              <label className="text-xs font-semibold text-slate-700">
+                Strength <span className="text-red-500">*</span>
+              </label>
+              <Input
+                {...register("strength")}
+                className="text-xs mt-1"
+              />
+            </div>
+          </div>
+
+          {/* Dosage Form, Sample Type & Batch Status */}
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <div>
+              <label className="text-xs font-semibold text-slate-700">
+                Dosage Form <span className="text-red-500">*</span>
               </label>
               <select
-                {...register("stage")}
-                className="w-full text-xs py-2 px-3 mt-1 rounded-md border border-slate-200 bg-white text-slate-700 font-medium focus:ring-1 focus:ring-pharma-blue"
+                {...register("dosageForm")}
+                className="w-full text-xs py-2 px-3 mt-1 rounded-md border border-slate-200 bg-white text-slate-700"
               >
-                <option value="Finished Product Release (FPR)">Finished Product Release (FPR)</option>
+                <option value="Tablets">Tablets</option>
+                <option value="Capsules">Capsules</option>
+                <option value="Syrups">Syrups</option>
+                <option value="Suspensions">Suspensions</option>
+                <option value="Creams">Creams</option>
+                <option value="Injectables / Ampoules">Injectables / Ampoules</option>
+              </select>
+            </div>
+
+            <div>
+              <label className="text-xs font-semibold text-slate-700">
+                Sample Type <span className="text-red-500">*</span>
+              </label>
+              <select
+                {...register("sampleType")}
+                className="w-full text-xs py-2 px-3 mt-1 rounded-md border border-slate-200 bg-white text-slate-700"
+              >
+                <option value="Finished Product Release">Finished Product Release</option>
                 <option value="In-Process Quality Control (IPQC)">In-Process Quality Control (IPQC)</option>
-                <option value="ICH Stability (Accelerated 40°C/75% RH)">ICH Stability (Accelerated 40°C/75% RH)</option>
-                <option value="ICH Stability (Real-Time 25°C/60% RH)">ICH Stability (Real-Time 25°C/60% RH)</option>
+                <option value="ICH Stability Testing">ICH Stability Testing</option>
+                <option value="Process Validation Batch">Process Validation Batch</option>
                 <option value="Sterile Parenteral Release">Sterile Parenteral Release</option>
               </select>
             </div>
 
             <div>
               <label className="text-xs font-semibold text-slate-700">
-                Stability Pull / Time Interval
+                Batch Status <span className="text-red-500">*</span>
+              </label>
+              <select
+                {...register("batchStatus")}
+                className="w-full text-xs py-2 px-3 mt-1 rounded-md border border-slate-200 bg-white text-slate-700"
+              >
+                <option value="Commercial Batch">Commercial Batch</option>
+                <option value="Validation Batch">Validation Batch</option>
+                <option value="Pilot Batch">Pilot Batch</option>
+                <option value="Stability Chamber Batch">Stability Chamber Batch</option>
+                <option value="Quarantine Hold">Quarantine Hold</option>
+              </select>
+            </div>
+          </div>
+
+          {/* User Required Dates Row */}
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 bg-slate-50 p-3 rounded-lg border border-slate-200">
+            <div>
+              <label className="text-xs font-semibold text-slate-700">
+                Manufacturing Date <span className="text-red-500">*</span>
               </label>
               <Input
-                {...register("stabilityInterval")}
-                placeholder="e.g. 6-Month Pull"
-                className="text-xs mt-1"
+                type="date"
+                {...register("manufacturingDate")}
+                className="text-xs mt-1 bg-white font-mono"
+              />
+            </div>
+
+            <div>
+              <label className="text-xs font-semibold text-slate-700">
+                Expiry Date <span className="text-red-500">*</span>
+              </label>
+              <Input
+                type="date"
+                {...register("expiryDate")}
+                className="text-xs mt-1 bg-white font-mono"
+              />
+            </div>
+
+            <div>
+              <label className="text-xs font-semibold text-slate-700">
+                Received Date <span className="text-red-500">*</span>
+              </label>
+              <Input
+                type="date"
+                {...register("receivedDate")}
+                className="text-xs mt-1 bg-white font-mono font-bold text-pharma-blue"
               />
             </div>
           </div>
 
-          {/* Disposition Status & Target Market */}
+          {/* Disposition Status & Packaging Details */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
               <label className="text-xs font-semibold text-slate-700">
@@ -198,60 +289,10 @@ export function EditProductSampleModal({
 
             <div>
               <label className="text-xs font-semibold text-slate-700">
-                Target Market <span className="text-red-500">*</span>
-              </label>
-              <select
-                {...register("targetMarket")}
-                className="w-full text-xs py-2 px-3 mt-1 rounded-md border border-slate-200 bg-white text-slate-700 font-medium"
-              >
-                <option value="Domestic (DRAP)">Domestic (Pakistan DRAP)</option>
-                <option value="Export (GCC / MENA)">Export (GCC / MENA)</option>
-                <option value="Institutional Hospital Supply">Institutional Hospital Supply</option>
-              </select>
-            </div>
-          </div>
-
-          {/* Production Line & Sampling Stage */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <div>
-              <label className="text-xs font-semibold text-slate-700">
-                Production Line / Facility <span className="text-red-500">*</span>
+                Packaging Details <span className="text-red-500">*</span>
               </label>
               <Input
-                {...register("productionLine")}
-                className="text-xs mt-1"
-              />
-            </div>
-
-            <div>
-              <label className="text-xs font-semibold text-slate-700">
-                Sampling Stage / Location <span className="text-red-500">*</span>
-              </label>
-              <Input
-                {...register("samplingStage")}
-                className="text-xs mt-1"
-              />
-            </div>
-          </div>
-
-          {/* Packaging Presentation & Storage */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <div>
-              <label className="text-xs font-semibold text-slate-700">
-                Packaging Presentation <span className="text-red-500">*</span>
-              </label>
-              <Input
-                {...register("packagingPresentation")}
-                className="text-xs mt-1"
-              />
-            </div>
-
-            <div>
-              <label className="text-xs font-semibold text-slate-700">
-                Storage Condition <span className="text-red-500">*</span>
-              </label>
-              <Input
-                {...register("storageCondition")}
+                {...register("packagingDetails")}
                 className="text-xs mt-1"
               />
             </div>
@@ -283,7 +324,7 @@ export function EditProductSampleModal({
           {/* Remarks */}
           <div>
             <label className="text-xs font-semibold text-slate-700">
-              Quality Release Remarks & Audit Trail Notes <span className="text-red-500">*</span>
+              Quality Release Remarks &amp; Audit Trail Notes <span className="text-red-500">*</span>
             </label>
             <textarea
               {...register("remarks")}

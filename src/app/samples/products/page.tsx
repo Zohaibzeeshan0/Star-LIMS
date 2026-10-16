@@ -90,6 +90,16 @@ export default function ProductSamplesPage() {
           : newStatus === "Quarantine"
           ? `${sample.remarks} • Placed on QA Quarantine hold for investigation.`
           : sample.remarks,
+      statusHistory: [
+        ...sample.statusHistory,
+        {
+          id: `SH-${Date.now()}`,
+          status: newStatus,
+          timestamp: new Date().toISOString().slice(0, 16).replace("T", " "),
+          changedBy: "Dr. Farhan Malik (QA Director)",
+          remarks: `Disposition updated to "${newStatus}".`
+        }
+      ]
     };
 
     setSamples((prev) => prev.map((s) => (s.id === updated.id ? updated : s)));
@@ -102,8 +112,8 @@ export default function ProductSamplesPage() {
   const total = samples.length;
   const released = samples.filter((s) => s.status === "Released").length;
   const underTesting = samples.filter((s) => s.status === "Under Testing").length;
-  const ipqcCount = samples.filter((s) => s.stage === "In-Process Quality Control (IPQC)").length;
-  const stabilityCount = samples.filter((s) => s.stage.includes("Stability")).length;
+  const ipqcCount = samples.filter((s) => s.sampleType === "In-Process Quality Control (IPQC)").length;
+  const stabilityCount = samples.filter((s) => s.sampleType.includes("Stability")).length;
   const quarantineOrRejected = samples.filter(
     (s) => s.status === "Quarantine" || s.status === "Rejected"
   ).length;
@@ -114,11 +124,11 @@ export default function ProductSamplesPage() {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-200/80 pb-4">
         <div>
           <span className="text-xs font-bold text-teal-pharma uppercase tracking-wider">
-            Phase 6 Module • Finished Dosage Forms, IPQC & Stability Surveillance
+            Phase 6 Module • Finished Dosage Forms, IPQC &amp; Stability Surveillance
           </span>
           <h1 className="font-heading text-2xl font-black text-pharma-blue flex items-center gap-2 mt-0.5">
             <Pill className="h-6 w-6 text-teal-pharma" />
-            Product Samples & Stability Testing Program
+            Pharmaceutical Product Sample Management
           </h1>
           <p className="text-xs text-slate-500 mt-1">
             Commercial batch release testing, In-Process Quality Controls (IPQC), ICH climatic chamber pulls (40°C/75% RH &amp; 25°C/60% RH), and sterile parenterals.
@@ -133,7 +143,7 @@ export default function ProductSamplesPage() {
             className="gap-1.5 font-bold shadow-xs"
           >
             <PlusCircle className="h-4 w-4" />
-            Register Batch Sample
+            Add Product Sample
           </Button>
         </div>
       </div>
@@ -159,19 +169,19 @@ export default function ProductSamplesPage() {
         <div className="rounded-xl border border-slate-200/80 bg-white p-4 shadow-2xs border-l-4 border-l-pharma-blue">
           <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500">Total Batches</span>
           <div className="font-heading text-2xl font-black text-pharma-blue mt-0.5">{total}</div>
-          <span className="text-[10px] text-slate-400 font-medium">Logged in QC streams</span>
+          <span className="text-[10px] text-slate-400 font-medium">Monitored in QC</span>
         </div>
 
         <div className="rounded-xl border border-slate-200/80 bg-white p-4 shadow-2xs border-l-4 border-l-teal-pharma">
           <span className="text-[10px] font-bold uppercase tracking-wider text-teal-pharma-dark">Released (Pass)</span>
           <div className="font-heading text-2xl font-black text-teal-pharma-dark mt-0.5">{released}</div>
-          <span className="text-[10px] text-teal-pharma-dark font-medium">Commercial batch release</span>
+          <span className="text-[10px] text-teal-pharma-dark font-medium">Commercial distribution</span>
         </div>
 
         <div className="rounded-xl border border-slate-200/80 bg-white p-4 shadow-2xs border-l-4 border-l-purple-500">
           <span className="text-[10px] font-bold uppercase tracking-wider text-purple-700">Under QC Testing</span>
           <div className="font-heading text-2xl font-black text-purple-700 mt-0.5">{underTesting}</div>
-          <span className="text-[10px] text-purple-600 font-medium">Assay & Sterility active</span>
+          <span className="text-[10px] text-purple-600 font-medium">Assay &amp; Dissolution active</span>
         </div>
 
         <div className="rounded-xl border border-slate-200/80 bg-white p-4 shadow-2xs border-l-4 border-l-indigo-500">

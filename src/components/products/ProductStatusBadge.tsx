@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { ProductStatus, TestingStage } from "@/lib/types/product";
+import { ProductStatus, SampleType } from "@/lib/types/product";
 import {
   CheckCircle2,
   Clock,
@@ -10,21 +10,17 @@ import {
   XCircle,
   ShieldCheck,
   Flame,
-  Layers,
-  ThermometerSnowflake,
-  ShieldAlert
+  ThermometerSnowflake
 } from "lucide-react";
 
 interface ProductStatusBadgeProps {
   status: ProductStatus;
-  stage?: TestingStage;
-  stabilityInterval?: string;
+  sampleType?: SampleType;
 }
 
 export function ProductStatusBadge({
   status,
-  stage,
-  stabilityInterval
+  sampleType
 }: ProductStatusBadgeProps) {
   let badgeStyle = "bg-slate-100 text-slate-700 border-slate-200";
   let icon = <Clock className="h-3 w-3" />;
@@ -65,23 +61,21 @@ export function ProductStatusBadge({
         <span>{status}</span>
       </span>
 
-      {stage && (
+      {sampleType && (
         <span
           className={`inline-flex items-center gap-1 text-[10px] font-bold px-1.5 py-0.2 rounded ${
-            stage.includes("Stability")
+            sampleType.includes("Stability")
               ? "bg-amber-100 text-amber-900"
-              : stage.includes("IPQC")
+              : sampleType.includes("IPQC")
               ? "bg-indigo-100 text-indigo-800"
-              : stage.includes("Sterile")
+              : sampleType.includes("Sterile")
               ? "bg-sky-100 text-sky-900"
               : "bg-slate-100 text-slate-700"
           }`}
         >
-          {stage.includes("Stability") && <Flame className="h-2.5 w-2.5 text-amber-600" />}
-          {stage.includes("Sterile") && <ThermometerSnowflake className="h-2.5 w-2.5 text-sky-600" />}
-          {stabilityInterval && stabilityInterval !== "N/A - Commercial Release"
-            ? `${stabilityInterval}`
-            : stage.replace("Finished Product Release (FPR)", "Commercial Release")}
+          {sampleType.includes("Stability") && <Flame className="h-2.5 w-2.5 text-amber-600" />}
+          {sampleType.includes("Sterile") && <ThermometerSnowflake className="h-2.5 w-2.5 text-sky-600" />}
+          {sampleType}
         </span>
       )}
     </div>
