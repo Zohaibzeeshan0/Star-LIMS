@@ -58,8 +58,9 @@ export function EditRetestSampleModal({
         unit: sample.unit,
         containersCount: sample.containersCount,
         manufactureDate: sample.manufactureDate,
-        originalRetestDate: sample.originalRetestDate,
-        currentRetestDate: sample.currentRetestDate,
+        previousTestDate: sample.previousTestDate,
+        lastRetestDate: sample.lastRetestDate,
+        nextRetestDueDate: sample.nextRetestDueDate,
         extendedRetestDate: sample.extendedRetestDate || "",
         retestCycleNumber: sample.retestCycleNumber,
         extensionMonthsGranted: sample.extensionMonthsGranted || 12,
@@ -83,7 +84,9 @@ export function EditRetestSampleModal({
       remainingStock: Number(data.remainingStock),
       unit: data.unit,
       containersCount: Number(data.containersCount),
-      currentRetestDate: data.currentRetestDate,
+      previousTestDate: data.previousTestDate,
+      lastRetestDate: data.lastRetestDate,
+      nextRetestDueDate: data.nextRetestDueDate,
       extendedRetestDate: data.extendedRetestDate || undefined,
       retestCycleNumber: Number(data.retestCycleNumber),
       extensionMonthsGranted: data.extensionMonthsGranted ? Number(data.extensionMonthsGranted) : undefined,
@@ -111,7 +114,7 @@ export function EditRetestSampleModal({
             </div>
             <div>
               <DialogTitle className="font-heading text-lg font-bold text-pharma-blue">
-                Edit Retest Surveillance Record: {sample.id}
+                Edit Retest Schedule: {sample.id}
               </DialogTitle>
               <DialogDescription className="text-xs text-slate-500">
                 Update surveillance status, extend shelf-life dates, adjust remaining warehouse stock or QC assignees.
@@ -147,7 +150,6 @@ export function EditRetestSampleModal({
           <input type="hidden" {...register("manufacturer")} />
           <input type="hidden" {...register("batchNumber")} />
           <input type="hidden" {...register("manufactureDate")} />
-          <input type="hidden" {...register("originalRetestDate")} />
 
           {/* Retest Status & Extension Months */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -159,13 +161,13 @@ export function EditRetestSampleModal({
                 {...register("status")}
                 className="w-full text-xs py-2 px-3 mt-1 rounded-md border border-slate-200 bg-white text-slate-700 font-medium focus:ring-1 focus:ring-pharma-blue"
               >
-                <option value="Scheduled">Scheduled</option>
                 <option value="Due Soon">Due Soon (&lt;= 30 Days)</option>
-                <option value="Overdue">Overdue (Quarantine Hold)</option>
-                <option value="Under Testing">Under Testing</option>
-                <option value="Extended / Passed">Extended / Passed (+Extension)</option>
+                <option value="Overdue">Overdue (Critical Hold)</option>
+                <option value="Scheduled">Scheduled (Valid Horizon)</option>
+                <option value="In Progress">In Progress (Under Testing)</option>
+                <option value="Completed">Completed (Passed / Extended)</option>
                 <option value="Quarantine">Quarantine</option>
-                <option value="Rejected / OOS">Rejected / OOS</option>
+                <option value="Rejected">Rejected</option>
               </select>
             </div>
 
@@ -182,27 +184,38 @@ export function EditRetestSampleModal({
             </div>
           </div>
 
-          {/* Dates Horizon */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 bg-slate-50 p-3 rounded-lg border border-slate-200">
+          {/* User Required Dates Row */}
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 bg-slate-50 p-3 rounded-lg border border-slate-200">
             <div>
               <label className="text-xs font-semibold text-slate-700">
-                Current Retest Horizon <span className="text-red-500">*</span>
+                Previous Test Date <span className="text-red-500">*</span>
               </label>
               <Input
                 type="date"
-                {...register("currentRetestDate")}
-                className="text-xs mt-1 bg-white"
+                {...register("previousTestDate")}
+                className="text-xs mt-1 bg-white font-mono"
               />
             </div>
 
             <div>
               <label className="text-xs font-semibold text-slate-700">
-                Extended Retest Date (if passed)
+                Last Retest Date <span className="text-red-500">*</span>
               </label>
               <Input
                 type="date"
-                {...register("extendedRetestDate")}
-                className="text-xs mt-1 bg-white font-semibold text-teal-700"
+                {...register("lastRetestDate")}
+                className="text-xs mt-1 bg-white font-mono"
+              />
+            </div>
+
+            <div>
+              <label className="text-xs font-semibold text-slate-700">
+                Next Retest Due Date <span className="text-red-500">*</span>
+              </label>
+              <Input
+                type="date"
+                {...register("nextRetestDueDate")}
+                className="text-xs mt-1 bg-white font-mono font-bold text-pharma-blue"
               />
             </div>
           </div>
@@ -280,7 +293,7 @@ export function EditRetestSampleModal({
           {/* Remarks */}
           <div>
             <label className="text-xs font-semibold text-slate-700">
-              Surveillance Observations & 21 CFR Part 11 Audit Remarks <span className="text-red-500">*</span>
+              Surveillance Observations &amp; 21 CFR Part 11 Audit Remarks <span className="text-red-500">*</span>
             </label>
             <textarea
               {...register("remarks")}

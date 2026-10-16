@@ -3,7 +3,7 @@ import { z } from "zod";
 export const retestSampleSchema = z.object({
   id: z
     .string()
-    .min(3, "Retest ID is required (e.g. CP-RET-2026-001)")
+    .min(3, "Sample ID is required (e.g. CP-RET-2026-001)")
     .regex(/^[A-Za-z0-9\-_]+$/, "Alphanumeric, hyphen, and underscore characters only"),
   rawMaterialSampleId: z
     .string()
@@ -51,12 +51,15 @@ export const retestSampleSchema = z.object({
   manufactureDate: z
     .string()
     .min(1, "Original manufacture date is required"),
-  originalRetestDate: z
+  previousTestDate: z
     .string()
-    .min(1, "Original retest date is required"),
-  currentRetestDate: z
+    .min(1, "Previous test date is required"),
+  lastRetestDate: z
     .string()
-    .min(1, "Current retest date is required"),
+    .min(1, "Last retest date is required"),
+  nextRetestDueDate: z
+    .string()
+    .min(1, "Next retest due date is required"),
   extendedRetestDate: z.string().optional(),
   retestCycleNumber: z
     .coerce
@@ -68,13 +71,13 @@ export const retestSampleSchema = z.object({
     .number()
     .optional(),
   status: z.enum([
-    "Scheduled",
     "Due Soon",
     "Overdue",
-    "Under Testing",
-    "Extended / Passed",
-    "Rejected / OOS",
-    "Quarantine"
+    "Scheduled",
+    "In Progress",
+    "Completed",
+    "Quarantine",
+    "Rejected"
   ]),
   retestReason: z
     .string()

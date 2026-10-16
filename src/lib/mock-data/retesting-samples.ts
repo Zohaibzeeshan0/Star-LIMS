@@ -1,7 +1,7 @@
 /**
  * Citi Pharma Laboratory Information Management System (Star-LIMS)
  * Raw Material Retesting Mock Data (Phase 5)
- * Realistic GMP surveillance records with degradation parameters, HPLC assays, and extension logs.
+ * Realistic GMP surveillance records with degradation parameters, HPLC assays, previous retest history and mock timelines.
  */
 
 import { RetestSample, ExpiryUrgency } from "../types/retesting";
@@ -11,43 +11,43 @@ export function getRetestUrgency(sample: RetestSample): {
   daysRemaining: number;
   label: string;
 } {
-  if (sample.status === "Extended / Passed") {
+  if (sample.status === "Completed") {
     return {
-      urgency: "EXTENDED",
+      urgency: "COMPLETED",
       daysRemaining: 365,
-      label: `Extended to ${sample.extendedRetestDate || "N/A"}`
+      label: `Extended until ${sample.extendedRetestDate || sample.nextRetestDueDate}`
     };
   }
 
   // Reference date for simulation (October 2026)
   const today = new Date("2026-10-16");
-  const targetDate = new Date(sample.currentRetestDate);
+  const targetDate = new Date(sample.nextRetestDueDate);
   const diffTime = targetDate.getTime() - today.getTime();
   const days = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
 
-  if (days < 0) {
+  if (days < 0 || sample.status === "Overdue") {
     return {
       urgency: "OVERDUE",
       daysRemaining: days,
       label: `Overdue by ${Math.abs(days)} days`
     };
-  } else if (days <= 30) {
+  } else if (days <= 30 || sample.status === "Due Soon") {
     return {
-      urgency: "URGENT_30",
+      urgency: "DUE_SOON",
       daysRemaining: days,
       label: `Due in ${days} days`
     };
-  } else if (days <= 60) {
+  } else if (sample.status === "In Progress") {
     return {
-      urgency: "UPCOMING_60",
+      urgency: "IN_PROGRESS",
       daysRemaining: days,
-      label: `Due in ${days} days`
+      label: `In Progress (Due in ${days}d)`
     };
   } else {
     return {
-      urgency: "VALID",
+      urgency: "SCHEDULED",
       daysRemaining: days,
-      label: `Valid (${days} days)`
+      label: `Scheduled (${days} days)`
     };
   }
 }
@@ -67,20 +67,80 @@ export const MOCK_RETEST_SAMPLES: RetestSample[] = [
     unit: "kg",
     containersCount: 18,
     manufactureDate: "2024-10-01",
-    initialReceiptDate: "2024-10-15",
-    originalRetestDate: "2026-10-01",
-    currentRetestDate: "2026-10-01",
+    previousTestDate: "2024-10-15",
+    lastRetestDate: "2026-10-01",
+    nextRetestDueDate: "2027-10-01",
     extendedRetestDate: "2027-10-01",
     retestCycleNumber: 1,
     extensionMonthsGranted: 12,
-    status: "Extended / Passed",
+    status: "Completed",
     retestReason: "Scheduled 24-Month Surveillance for Shelf-Life Extension",
     pharmacopeia: "BP 2026",
     storageCondition: "Store airtight below 25°C in original double-PE lined fiber drums",
-    analyst: "Zubair Ahmed (Senior QC Analyst)",
-    reviewedBy: "Dr. Farhan Malik (QA Director)",
+    analyst: "Zubair Ahmed",
+    reviewedBy: "Dr. Farhan Malik",
     qaDispositionDate: "2026-10-08",
     remarks: "Assay maintained at 99.4% (spec 98.0-101.0%). 4-Aminophenol impurity below LOQ. +12 Months Extension authorized.",
+    history: [
+      {
+        id: "HIST-01",
+        cycleNumber: 1,
+        testDate: "2026-10-01",
+        assayResult: "99.42%",
+        waterContent: "0.24%",
+        impurities: "0.0018% 4-Aminophenol",
+        extensionGranted: "+12 Months (Valid until 2027-10-01)",
+        analyst: "Zubair Ahmed",
+        disposition: "Approved / Extended"
+      }
+    ],
+    timeline: [
+      {
+        id: "EV-01",
+        title: "Consignment Intake & Sampling",
+        timestamp: "2024-10-15 09:30",
+        stage: "Warehouse Quarantine",
+        description: "18 fiber drums received from Mallinckrodt USA. Tamper-evident seals intact.",
+        user: "Tariq Mahmood (Warehouse Lead)",
+        state: "completed"
+      },
+      {
+        id: "EV-02",
+        title: "Initial Lot Release Testing",
+        timestamp: "2024-10-18 14:15",
+        stage: "QC Laboratory",
+        description: "Assay 99.85%, LOD 0.18%. Initial 24-month shelf life granted under BP 2026.",
+        user: "Zubair Ahmed (QC Analyst)",
+        state: "completed"
+      },
+      {
+        id: "EV-03",
+        title: "24-Month Retest Surveillance Requisition",
+        timestamp: "2026-09-25 08:30",
+        stage: "QC Scheduling",
+        description: "Surveillance sampling protocol SR-2026-301 issued prior to retest due date.",
+        user: "System / SOP-QC-075",
+        state: "completed"
+      },
+      {
+        id: "EV-04",
+        title: "Chromatographic Assays & KF Moisture",
+        timestamp: "2026-10-03 16:45",
+        stage: "Analytical QC",
+        description: "HPLC Waters e2695 potency 99.42%. Karl Fischer water content 0.24%. All criteria passed.",
+        user: "Zubair Ahmed (QC Analyst)",
+        state: "completed"
+      },
+      {
+        id: "EV-05",
+        title: "QA Shelf-Life Extension Authorization",
+        timestamp: "2026-10-08 11:20",
+        stage: "Quality Assurance",
+        description: "Retest certificate stamped. New expiration boundary set to 2027-10-01 (+12 Months).",
+        user: "Dr. Farhan Malik (QA Director)",
+        state: "completed"
+      }
+    ],
     tests: [
       {
         id: "T-01",
@@ -108,15 +168,6 @@ export const MOCK_RETEST_SAMPLES: RetestSample[] = [
         currentRetestResult: "0.24%",
         passed: true,
         instrumentUsed: "Metrohm 890 Titrando KF"
-      },
-      {
-        id: "T-04",
-        parameter: "Granule Compressibility Index",
-        specification: "12.0% - 18.0%",
-        initialReleaseResult: "14.2%",
-        currentRetestResult: "14.8%",
-        passed: true,
-        instrumentUsed: "Erweka Tapped Density Tester"
       }
     ],
     createdAt: "2026-09-25T08:30:00Z",
@@ -136,24 +187,63 @@ export const MOCK_RETEST_SAMPLES: RetestSample[] = [
     unit: "kg",
     containersCount: 30,
     manufactureDate: "2024-11-10",
-    initialReceiptDate: "2024-11-28",
-    originalRetestDate: "2026-11-10",
-    currentRetestDate: "2026-11-10",
+    previousTestDate: "2024-11-28",
+    lastRetestDate: "2024-11-28",
+    nextRetestDueDate: "2026-11-10",
     retestCycleNumber: 1,
     status: "Due Soon",
     retestReason: "Surveillance prior to 24-month manufacturer retest boundary",
     pharmacopeia: "BP 2026",
     storageCondition: "Store airtight below 25°C, protect from high humidity",
-    analyst: "Saima Naz (QC Analyst)",
-    reviewedBy: "Dr. Farhan Malik (QA Director)",
+    analyst: "Saima Naz",
+    reviewedBy: "Dr. Farhan Malik",
     remarks: "Sample drawn from 5 representative drums. Assay HPLC run queued on Instrument HPLC-04.",
+    history: [],
+    timeline: [
+      {
+        id: "EV-01",
+        title: "Intake Staging & Initial Release",
+        timestamp: "2024-11-28 10:00",
+        stage: "Warehouse Staging",
+        description: "30 drums received. Potency 99.91% verified under BP 2026.",
+        user: "Saima Naz (QC Analyst)",
+        state: "completed"
+      },
+      {
+        id: "EV-02",
+        title: "Surveillance Approaching Alert",
+        timestamp: "2026-10-02 08:00",
+        stage: "QC LIMS Surveillance",
+        description: "Automated alert: Due date approaching within 25 days.",
+        user: "System Monitor",
+        state: "completed"
+      },
+      {
+        id: "EV-03",
+        title: "Warehouse Sampling Requisition Issued",
+        timestamp: "2026-10-14 11:30",
+        stage: "Warehouse Bay R-01",
+        description: "Composite 250g sample drawn across 5 representative drums.",
+        user: "Saima Naz (QC Analyst)",
+        state: "current"
+      },
+      {
+        id: "EV-04",
+        title: "HPLC Assays & Dicyandiamide Purity",
+        timestamp: "2026-10-18 (Projected)",
+        stage: "HPLC Lab",
+        description: "Instrument HPLC-04 scheduled for isocratic run.",
+        user: "Assigned Analyst",
+        state: "pending"
+      }
+    ],
     tests: [
       {
         id: "T-01",
         parameter: "Assay (Metformin HCl, Dried Basis)",
         specification: "98.5% - 101.0%",
         initialReleaseResult: "99.91%",
-        currentRetestResult: "Pending HPLC run",
+        currentRetestResult: "Sample drawn - Pending run",
         passed: true,
         instrumentUsed: "Agilent 1260 Infinity II"
       },
@@ -162,18 +252,9 @@ export const MOCK_RETEST_SAMPLES: RetestSample[] = [
         parameter: "Related Substance: Dicyandiamide",
         specification: "NMT 0.05%",
         initialReleaseResult: "0.015%",
-        currentRetestResult: "Pending HPLC run",
+        currentRetestResult: "Pending run",
         passed: true,
         instrumentUsed: "Agilent 1260 DAD"
-      },
-      {
-        id: "T-03",
-        parameter: "Loss on Drying (LOD)",
-        specification: "NMT 0.50%",
-        initialReleaseResult: "0.22%",
-        currentRetestResult: "0.28%",
-        passed: true,
-        instrumentUsed: "Mettler Toledo Halogen Moisture HR83"
       }
     ],
     createdAt: "2026-10-02T10:00:00Z",
@@ -193,24 +274,66 @@ export const MOCK_RETEST_SAMPLES: RetestSample[] = [
     unit: "kg",
     containersCount: 16,
     manufactureDate: "2023-09-15",
-    initialReceiptDate: "2023-10-02",
-    originalRetestDate: "2025-09-15",
-    currentRetestDate: "2026-10-08",
+    previousTestDate: "2025-09-15",
+    lastRetestDate: "2025-09-15",
+    nextRetestDueDate: "2026-10-08",
     retestCycleNumber: 2,
     status: "Overdue",
     retestReason: "2nd Retest Interval expired on 2026-10-08. Warehouse hold active.",
     pharmacopeia: "USP 48-NF 43",
     storageCondition: "Store in airtight containers at temperature not exceeding 25°C",
-    analyst: "Bilal Tariq (Microbiology & QC Lead)",
-    reviewedBy: "Dr. Farhan Malik (QA Director)",
+    analyst: "Bilal Tariq",
+    reviewedBy: "Dr. Farhan Malik",
     remarks: "CRITICAL: Current retest date exceeded by 8 days! Material automatically locked in ERP dispensing. Urgent re-assay required.",
+    history: [
+      {
+        id: "HIST-01",
+        cycleNumber: 1,
+        testDate: "2025-09-15",
+        assayResult: "988 µg/mg",
+        waterContent: "13.4%",
+        impurities: "NMT 0.5%",
+        extensionGranted: "+12 Months (Valid until 2026-10-08)",
+        analyst: "Bilal Tariq",
+        disposition: "Approved / Extended"
+      }
+    ],
+    timeline: [
+      {
+        id: "EV-01",
+        title: "Cycle 1 Retest Pass & Extension",
+        timestamp: "2025-09-15 11:00",
+        stage: "QA Authorization",
+        description: "Potency 988 µg/mg. Extended +12 months to 2026-10-08.",
+        user: "Bilal Tariq (Microbiology Lead)",
+        state: "completed"
+      },
+      {
+        id: "EV-02",
+        title: "Retest Due Date Boundary Exceeded",
+        timestamp: "2026-10-09 00:01",
+        stage: "ERP & LIMS Staging Lock",
+        description: "CRITICAL ALERT: Material locked in quarantine. Dispensing barred under SOP-QC-075.",
+        user: "System Audit Monitor",
+        state: "current"
+      },
+      {
+        id: "EV-03",
+        title: "Urgent Expedited Re-sampling",
+        timestamp: "2026-10-15 14:00",
+        stage: "Dedicated Beta-Lactam Booth",
+        description: "Sample drawn by QA under containment protocol. Priority queued in QC.",
+        user: "Bilal Tariq (QC Analyst)",
+        state: "current"
+      }
+    ],
     tests: [
       {
         id: "T-01",
         parameter: "Potency Assay (USP C16H19N3O5S)",
         specification: "900 - 1050 µg/mg (anhydrous)",
         initialReleaseResult: "992 µg/mg",
-        currentRetestResult: "Testing queued",
+        currentRetestResult: "Priority testing queued",
         passed: false,
         instrumentUsed: "Waters Alliance HPLC"
       },
@@ -219,7 +342,7 @@ export const MOCK_RETEST_SAMPLES: RetestSample[] = [
         parameter: "Water Content (Trihydrate Stoichiometry)",
         specification: "11.5% - 14.5%",
         initialReleaseResult: "13.2%",
-        currentRetestResult: "Testing queued",
+        currentRetestResult: "Priority testing queued",
         passed: false,
         instrumentUsed: "Metrohm 890 Titrando KF"
       }
@@ -241,17 +364,38 @@ export const MOCK_RETEST_SAMPLES: RetestSample[] = [
     unit: "kg",
     containersCount: 9,
     manufactureDate: "2024-10-20",
-    initialReceiptDate: "2024-11-05",
-    originalRetestDate: "2026-10-20",
-    currentRetestDate: "2026-10-20",
+    previousTestDate: "2024-11-05",
+    lastRetestDate: "2024-11-05",
+    nextRetestDueDate: "2026-10-20",
     retestCycleNumber: 1,
-    status: "Under Testing",
+    status: "In Progress",
     retestReason: "Surveillance retest prior to 2-year anniversary",
     pharmacopeia: "USP 48-NF 43",
     storageCondition: "Protect from light, preserve in well-closed containers below 25°C",
-    analyst: "Zubair Ahmed (Senior QC Analyst)",
-    reviewedBy: "Dr. Farhan Malik (QA Director)",
+    analyst: "Zubair Ahmed",
+    reviewedBy: "Dr. Farhan Malik",
     remarks: "Fluoroquinolone related impurities analysis underway. Chromatographic resolution check passed.",
+    history: [],
+    timeline: [
+      {
+        id: "EV-01",
+        title: "Surveillance Requisition Issued",
+        timestamp: "2026-10-10 11:20",
+        stage: "QC Intake",
+        description: "Requisition #CP-SR-404 approved by QA.",
+        user: "Zubair Ahmed",
+        state: "completed"
+      },
+      {
+        id: "EV-02",
+        title: "Testing In Progress on HPLC-02",
+        timestamp: "2026-10-16 08:15",
+        stage: "Analytical Instrumental Suite",
+        description: "Chromatographic system suitability passed. Sample duplicate injections running.",
+        user: "Zubair Ahmed",
+        state: "current"
+      }
+    ],
     tests: [
       {
         id: "T-01",
@@ -270,15 +414,6 @@ export const MOCK_RETEST_SAMPLES: RetestSample[] = [
         currentRetestResult: "0.06%",
         passed: true,
         instrumentUsed: "Waters PDA 2998"
-      },
-      {
-        id: "T-03",
-        parameter: "Water Content by Karl Fischer",
-        specification: "4.7% - 6.7%",
-        initialReleaseResult: "5.4%",
-        currentRetestResult: "5.6%",
-        passed: true,
-        instrumentUsed: "Metrohm KF 890"
       }
     ],
     createdAt: "2026-10-10T11:20:00Z",
@@ -298,18 +433,51 @@ export const MOCK_RETEST_SAMPLES: RetestSample[] = [
     unit: "kg",
     containersCount: 24,
     manufactureDate: "2023-09-01",
-    initialReceiptDate: "2023-09-20",
-    originalRetestDate: "2025-09-01",
-    currentRetestDate: "2026-09-01",
+    previousTestDate: "2025-09-01",
+    lastRetestDate: "2026-09-01",
+    nextRetestDueDate: "2026-09-01",
     retestCycleNumber: 2,
-    status: "Rejected / OOS",
+    status: "Rejected",
     retestReason: "Surveillance 36-Month Expiry Evaluation",
     pharmacopeia: "Ph. Eur. 11.0",
     storageCondition: "Store below 25°C in cool dry environment, avoid heat sources",
-    analyst: "Saima Naz (QC Analyst)",
-    reviewedBy: "Dr. Farhan Malik (QA Director)",
+    analyst: "Saima Naz",
+    reviewedBy: "Dr. Farhan Malik",
     qaDispositionDate: "2026-09-18",
     remarks: "OOS Investigation OOS-2026-089: Stearic acid / Palmitic acid ratio degraded below Ph. Eur. monograph limits. Free fatty acid content elevated. Material rejected for destruction.",
+    history: [
+      {
+        id: "HIST-01",
+        cycleNumber: 1,
+        testDate: "2025-09-01",
+        assayResult: "Stearic 44.1%",
+        waterContent: "2.1%",
+        impurities: "FFA 1.8%",
+        extensionGranted: "+12 Months",
+        analyst: "Saima Naz",
+        disposition: "Approved / Extended"
+      }
+    ],
+    timeline: [
+      {
+        id: "EV-01",
+        title: "36-Month Surveillance Testing",
+        timestamp: "2026-09-05 08:00",
+        stage: "Gas Chromatography Lab",
+        description: "Fatty acid breakdown detected on Shimadzu GC-2010 Plus.",
+        user: "Saima Naz",
+        state: "completed"
+      },
+      {
+        id: "EV-02",
+        title: "OOS Investigation OOS-2026-089 & Formal Rejection",
+        timestamp: "2026-09-18 15:30",
+        stage: "QA Disposition",
+        description: "Stearic acid 37.4% (spec NLT 40.0%). Lot quarantined for bio-hazardous destruction.",
+        user: "Dr. Farhan Malik",
+        state: "completed"
+      }
+    ],
     tests: [
       {
         id: "T-01",
@@ -319,24 +487,6 @@ export const MOCK_RETEST_SAMPLES: RetestSample[] = [
         currentRetestResult: "37.4% (OOS)",
         passed: false,
         instrumentUsed: "Shimadzu GC-2010 Plus Gas Chromatograph"
-      },
-      {
-        id: "T-02",
-        parameter: "Sum of Stearic + Palmitic Acid",
-        specification: "NLT 90.0%",
-        initialReleaseResult: "94.8%",
-        currentRetestResult: "87.1% (OOS)",
-        passed: false,
-        instrumentUsed: "Shimadzu GC-2010 Plus"
-      },
-      {
-        id: "T-03",
-        parameter: "Free Fatty Acids",
-        specification: "NMT 3.0%",
-        initialReleaseResult: "1.1%",
-        currentRetestResult: "4.8% (OOS)",
-        passed: false,
-        instrumentUsed: "Automatic Potentiometric Titrator"
       }
     ],
     createdAt: "2026-09-05T08:00:00Z",
@@ -356,20 +506,44 @@ export const MOCK_RETEST_SAMPLES: RetestSample[] = [
     unit: "kg",
     containersCount: 20,
     manufactureDate: "2024-09-10",
-    initialReceiptDate: "2024-09-25",
-    originalRetestDate: "2026-09-10",
-    currentRetestDate: "2026-09-10",
+    previousTestDate: "2024-09-25",
+    lastRetestDate: "2026-09-10",
+    nextRetestDueDate: "2027-09-10",
     extendedRetestDate: "2027-09-10",
     retestCycleNumber: 1,
     extensionMonthsGranted: 12,
-    status: "Extended / Passed",
+    status: "Completed",
     retestReason: "Annual surveillance retest for wet granulation binder stock",
     pharmacopeia: "USP 48-NF 43",
     storageCondition: "Store in tight containers in a dry place, hygroscopic",
-    analyst: "Zubair Ahmed (Senior QC Analyst)",
-    reviewedBy: "Dr. Farhan Malik (QA Director)",
+    analyst: "Zubair Ahmed",
+    reviewedBy: "Dr. Farhan Malik",
     qaDispositionDate: "2026-09-22",
     remarks: "K-value stable at 30.2. Peroxides below limits. Extension of +12 months granted.",
+    history: [
+      {
+        id: "HIST-01",
+        cycleNumber: 1,
+        testDate: "2026-09-10",
+        assayResult: "K-Value: 30.2",
+        waterContent: "3.2%",
+        impurities: "Peroxides: 185 ppm",
+        extensionGranted: "+12 Months (Valid until 2027-09-10)",
+        analyst: "Zubair Ahmed",
+        disposition: "Approved / Extended"
+      }
+    ],
+    timeline: [
+      {
+        id: "EV-01",
+        title: "Surveillance Retest Completed",
+        timestamp: "2026-09-22 17:10",
+        stage: "QA Authorization",
+        description: "Viscosity K-value 30.2. Extension authorized.",
+        user: "Dr. Farhan Malik",
+        state: "completed"
+      }
+    ],
     tests: [
       {
         id: "T-01",
@@ -379,24 +553,6 @@ export const MOCK_RETEST_SAMPLES: RetestSample[] = [
         currentRetestResult: "30.2",
         passed: true,
         instrumentUsed: "Ubbelohde Viscometer"
-      },
-      {
-        id: "T-02",
-        parameter: "Water Content by KF",
-        specification: "NMT 5.0%",
-        initialReleaseResult: "2.8%",
-        currentRetestResult: "3.2%",
-        passed: true,
-        instrumentUsed: "Metrohm KF Titrator"
-      },
-      {
-        id: "T-03",
-        parameter: "Peroxides Content (as H2O2)",
-        specification: "NMT 400 ppm",
-        initialReleaseResult: "110 ppm",
-        currentRetestResult: "185 ppm",
-        passed: true,
-        instrumentUsed: "Peroxide Spectrophotometric Assay"
       }
     ],
     createdAt: "2026-09-12T14:00:00Z",
@@ -416,17 +572,38 @@ export const MOCK_RETEST_SAMPLES: RetestSample[] = [
     unit: "kg",
     containersCount: 11,
     manufactureDate: "2024-10-12",
-    initialReceiptDate: "2024-10-28",
-    originalRetestDate: "2026-10-12",
-    currentRetestDate: "2026-10-12",
+    previousTestDate: "2024-10-28",
+    lastRetestDate: "2026-10-12",
+    nextRetestDueDate: "2026-10-12",
     retestCycleNumber: 1,
     status: "Quarantine",
     retestReason: "Surveillance Retest • Slight visual darkening reported during sampling",
     pharmacopeia: "USP 48-NF 43",
     storageCondition: "Store below 20°C in moisture-proof containers with desiccant",
-    analyst: "Saima Naz (QC Analyst)",
-    reviewedBy: "Dr. Farhan Malik (QA Director)",
+    analyst: "Saima Naz",
+    reviewedBy: "Dr. Farhan Malik",
     remarks: "Visual inspection detected slight off-white to cream shift. Acid resistance test and omeprazole sulfone/sulfide impurity profiling in progress. Lot placed in QA Quarantine.",
+    history: [],
+    timeline: [
+      {
+        id: "EV-01",
+        title: "Sampling Visual Discrepancy Note",
+        timestamp: "2026-10-11 13:45",
+        stage: "Sampling Booth",
+        description: "Color shift noticed. QA deviation logged.",
+        user: "Saima Naz",
+        state: "completed"
+      },
+      {
+        id: "EV-02",
+        title: "QA Quarantine Investigation Hold",
+        timestamp: "2026-10-15 10:30",
+        stage: "Quarantine Chamber",
+        description: "Acid resistance testing in progress on DT 820.",
+        user: "Dr. Farhan Malik",
+        state: "current"
+      }
+    ],
     tests: [
       {
         id: "T-01",
@@ -436,24 +613,6 @@ export const MOCK_RETEST_SAMPLES: RetestSample[] = [
         currentRetestResult: "6.8%",
         passed: true,
         instrumentUsed: "Erweka Dissolution Tester DT 820"
-      },
-      {
-        id: "T-02",
-        parameter: "Dissolution in Buffer pH 6.8 (30 min)",
-        specification: "NLT 75% dissolved",
-        initialReleaseResult: "88.4%",
-        currentRetestResult: "81.2%",
-        passed: true,
-        instrumentUsed: "Agilent UV Spectrophotometer"
-      },
-      {
-        id: "T-03",
-        parameter: "Related Substance: Omeprazole Sulfone",
-        specification: "NMT 0.50%",
-        initialReleaseResult: "0.08%",
-        currentRetestResult: "0.42%",
-        passed: true,
-        instrumentUsed: "Waters Alliance e2695 HPLC"
       }
     ],
     createdAt: "2026-10-11T13:45:00Z",
@@ -473,20 +632,44 @@ export const MOCK_RETEST_SAMPLES: RetestSample[] = [
     unit: "kg",
     containersCount: 5,
     manufactureDate: "2024-08-20",
-    initialReceiptDate: "2024-09-05",
-    originalRetestDate: "2026-08-20",
-    currentRetestDate: "2026-08-20",
+    previousTestDate: "2024-09-05",
+    lastRetestDate: "2026-08-20",
+    nextRetestDueDate: "2028-08-20",
     extendedRetestDate: "2028-08-20",
     retestCycleNumber: 1,
     extensionMonthsGranted: 24,
-    status: "Extended / Passed",
+    status: "Completed",
     retestReason: "Biennial Surveillance • Cold Chain Integrity Verification",
     pharmacopeia: "USP 48-NF 43",
     storageCondition: "Store airtight between 2°C and 8°C in nitrogen flushed packs",
-    analyst: "Zubair Ahmed (Senior QC Analyst)",
-    reviewedBy: "Dr. Farhan Malik (QA Director)",
+    analyst: "Zubair Ahmed",
+    reviewedBy: "Dr. Farhan Malik",
     qaDispositionDate: "2026-08-29",
     remarks: "Polymorphic Form-I confirmed by Powder X-Ray Diffraction (PXRD). Enantiomeric purity 99.9%. +24 Months shelf-life extension validated.",
+    history: [
+      {
+        id: "HIST-01",
+        cycleNumber: 1,
+        testDate: "2026-08-20",
+        assayResult: "100.1%",
+        waterContent: "4.7%",
+        impurities: "Chiral 99.90%",
+        extensionGranted: "+24 Months (Valid until 2028-08-20)",
+        analyst: "Zubair Ahmed",
+        disposition: "Approved / Extended"
+      }
+    ],
+    timeline: [
+      {
+        id: "EV-01",
+        title: "Cold Chain Retest Inspection Passed",
+        timestamp: "2026-08-29 16:00",
+        stage: "QA Authorization",
+        description: "+24 Months extension validated for cold-bay stock.",
+        user: "Dr. Farhan Malik",
+        state: "completed"
+      }
+    ],
     tests: [
       {
         id: "T-01",
@@ -496,24 +679,6 @@ export const MOCK_RETEST_SAMPLES: RetestSample[] = [
         currentRetestResult: "100.1%",
         passed: true,
         instrumentUsed: "Waters HPLC Alliance"
-      },
-      {
-        id: "T-02",
-        parameter: "Enantiomeric Purity (Chiral HPLC)",
-        specification: "NLT 99.5%",
-        initialReleaseResult: "99.92%",
-        currentRetestResult: "99.90%",
-        passed: true,
-        instrumentUsed: "Chiralpak AD-H Column / Waters PDA"
-      },
-      {
-        id: "T-03",
-        parameter: "Water Content by KF",
-        specification: "3.5% - 5.5%",
-        initialReleaseResult: "4.5%",
-        currentRetestResult: "4.7%",
-        passed: true,
-        instrumentUsed: "Metrohm KF Titrator"
       }
     ],
     createdAt: "2026-08-21T09:00:00Z",
@@ -533,17 +698,29 @@ export const MOCK_RETEST_SAMPLES: RetestSample[] = [
     unit: "kg",
     containersCount: 50,
     manufactureDate: "2024-11-20",
-    initialReceiptDate: "2024-12-05",
-    originalRetestDate: "2026-11-20",
-    currentRetestDate: "2026-11-20",
+    previousTestDate: "2024-12-05",
+    lastRetestDate: "2024-12-05",
+    nextRetestDueDate: "2026-11-20",
     retestCycleNumber: 1,
     status: "Scheduled",
     retestReason: "Standard 24-Month Surveillance Schedule",
     pharmacopeia: "USP 48-NF 43",
     storageCondition: "Store below 30°C in a dry area, protect from damp surfaces",
-    analyst: "Bilal Tariq (QC Analyst)",
-    reviewedBy: "Dr. Farhan Malik (QA Director)",
+    analyst: "Bilal Tariq",
+    reviewedBy: "Dr. Farhan Malik",
     remarks: "Scheduled for sampling next week. Retest notification dispatched to warehouse dispensing lead.",
+    history: [],
+    timeline: [
+      {
+        id: "EV-01",
+        title: "24-Month Retest Scheduled",
+        timestamp: "2026-10-12 11:00",
+        stage: "QC Calendar",
+        description: "Scheduled sampling notification for Bay E-02.",
+        user: "Bilal Tariq",
+        state: "completed"
+      }
+    ],
     tests: [
       {
         id: "T-01",
@@ -553,15 +730,6 @@ export const MOCK_RETEST_SAMPLES: RetestSample[] = [
         currentRetestResult: "Scheduled",
         passed: true,
         instrumentUsed: "Mettler Toledo HR83"
-      },
-      {
-        id: "T-02",
-        parameter: "Particle Size (+60 mesh retain)",
-        specification: "NMT 8.0%",
-        initialReleaseResult: "2.4%",
-        currentRetestResult: "Scheduled",
-        passed: true,
-        instrumentUsed: "Retsch AS 200 Sieve Shaker"
       }
     ],
     createdAt: "2026-10-12T11:00:00Z",
@@ -581,17 +749,29 @@ export const MOCK_RETEST_SAMPLES: RetestSample[] = [
     unit: "kg",
     containersCount: 32,
     manufactureDate: "2024-10-30",
-    initialReceiptDate: "2024-11-14",
-    originalRetestDate: "2026-10-30",
-    currentRetestDate: "2026-10-30",
+    previousTestDate: "2024-11-14",
+    lastRetestDate: "2024-11-14",
+    nextRetestDueDate: "2026-10-30",
     retestCycleNumber: 1,
     status: "Due Soon",
     retestReason: "Surveillance prior to 2-year manufacturer expiration boundary",
     pharmacopeia: "USP 48-NF 43",
     storageCondition: "Store in well-closed containers at 15-25°C",
-    analyst: "Saima Naz (QC Analyst)",
-    reviewedBy: "Dr. Farhan Malik (QA Director)",
+    analyst: "Saima Naz",
+    reviewedBy: "Dr. Farhan Malik",
     remarks: "Due in 14 days. Sampling requisition #SR-2026-401 issued to warehouse sampling booth.",
+    history: [],
+    timeline: [
+      {
+        id: "EV-01",
+        title: "Approaching Due Date Alert (14 Days)",
+        timestamp: "2026-10-05 09:30",
+        stage: "QC LIMS Watchlist",
+        description: "Requisition sent to sampling team.",
+        user: "Saima Naz",
+        state: "completed"
+      }
+    ],
     tests: [
       {
         id: "T-01",
@@ -601,15 +781,6 @@ export const MOCK_RETEST_SAMPLES: RetestSample[] = [
         currentRetestResult: "11.2%",
         passed: true,
         instrumentUsed: "Halogen Moisture Analyzer"
-      },
-      {
-        id: "T-02",
-        parameter: "pH of 10% Aqueous Suspension",
-        specification: "4.5 - 7.0",
-        initialReleaseResult: "5.8",
-        currentRetestResult: "5.6",
-        passed: true,
-        instrumentUsed: "Mettler Toledo pH Meter SevenDirect"
       }
     ],
     createdAt: "2026-10-05T09:30:00Z",
@@ -619,7 +790,7 @@ export const MOCK_RETEST_SAMPLES: RetestSample[] = [
     id: "CP-RET-2026-011",
     rawMaterialSampleId: "CP-RAW-2024-0905",
     materialCode: "RM-SOL-0004",
-    materialName: "Isopropanol (IPA Electronic / Spectro Grade)",
+    materialName: "Isopropanol (IPA Spectro Grade)",
     category: "Process Solvent / Reagent",
     supplier: "Honeywell Specialty Chemicals",
     manufacturer: "Honeywell Seelze GmbH, Germany",
@@ -629,17 +800,29 @@ export const MOCK_RETEST_SAMPLES: RetestSample[] = [
     unit: "Liters",
     containersCount: 3,
     manufactureDate: "2024-10-25",
-    initialReceiptDate: "2024-11-08",
-    originalRetestDate: "2026-10-25",
-    currentRetestDate: "2026-10-25",
+    previousTestDate: "2024-11-08",
+    lastRetestDate: "2024-11-08",
+    nextRetestDueDate: "2026-10-25",
     retestCycleNumber: 1,
-    status: "Under Testing",
+    status: "In Progress",
     retestReason: "Peroxide & acidity surveillance in organic solvent drums",
     pharmacopeia: "Ph. Eur. 11.0",
     storageCondition: "Store in dedicated spark-proof flammable safety cabinet below 25°C",
-    analyst: "Bilal Tariq (QC Analyst)",
-    reviewedBy: "Dr. Farhan Malik (QA Director)",
+    analyst: "Bilal Tariq",
+    reviewedBy: "Dr. Farhan Malik",
     remarks: "Drum seal inspected. Refractive index and gas chromatography purity running on GC-01.",
+    history: [],
+    timeline: [
+      {
+        id: "EV-01",
+        title: "Solvent Testing In Progress",
+        timestamp: "2026-10-16 09:20",
+        stage: "GC Lab",
+        description: "Non-volatile residue and KF water running.",
+        user: "Bilal Tariq",
+        state: "current"
+      }
+    ],
     tests: [
       {
         id: "T-01",
@@ -649,24 +832,6 @@ export const MOCK_RETEST_SAMPLES: RetestSample[] = [
         currentRetestResult: "99.94%",
         passed: true,
         instrumentUsed: "Shimadzu GC-2010 Plus"
-      },
-      {
-        id: "T-02",
-        parameter: "Non-Volatile Residue",
-        specification: "NMT 2 mg / 100 mL",
-        initialReleaseResult: "0.4 mg",
-        currentRetestResult: "0.6 mg",
-        passed: true,
-        instrumentUsed: "Analytical Balance 5-Decimals"
-      },
-      {
-        id: "T-03",
-        parameter: "Water Content by KF",
-        specification: "NMT 0.10%",
-        initialReleaseResult: "0.03%",
-        currentRetestResult: "0.05%",
-        passed: true,
-        instrumentUsed: "Metrohm KF Coulometer"
       }
     ],
     createdAt: "2026-10-12T08:00:00Z",
@@ -686,20 +851,44 @@ export const MOCK_RETEST_SAMPLES: RetestSample[] = [
     unit: "kg",
     containersCount: 3,
     manufactureDate: "2024-08-15",
-    initialReceiptDate: "2024-09-01",
-    originalRetestDate: "2026-08-15",
-    currentRetestDate: "2026-08-15",
+    previousTestDate: "2024-09-01",
+    lastRetestDate: "2026-08-15",
+    nextRetestDueDate: "2027-08-15",
     extendedRetestDate: "2027-08-15",
     retestCycleNumber: 1,
     extensionMonthsGranted: 12,
-    status: "Extended / Passed",
+    status: "Completed",
     retestReason: "Liquid Oral Syrup Formulation Retest Program",
     pharmacopeia: "USP 48-NF 43",
     storageCondition: "Store airtight below 25°C, protect from high humidity",
-    analyst: "Zubair Ahmed (Senior QC Analyst)",
-    reviewedBy: "Dr. Farhan Malik (QA Director)",
+    analyst: "Zubair Ahmed",
+    reviewedBy: "Dr. Farhan Malik",
     qaDispositionDate: "2026-08-25",
     remarks: "Potency at 99.7%. pH of 0.1% solution in range 9.5-10.5. +12 months shelf extension applied.",
+    history: [
+      {
+        id: "HIST-01",
+        cycleNumber: 1,
+        testDate: "2026-08-15",
+        assayResult: "99.7%",
+        waterContent: "2.1%",
+        impurities: "p-Hydroxybenzoic acid: 0.12%",
+        extensionGranted: "+12 Months",
+        analyst: "Zubair Ahmed",
+        disposition: "Approved / Extended"
+      }
+    ],
+    timeline: [
+      {
+        id: "EV-01",
+        title: "Shelf-Life Extension Granted",
+        timestamp: "2026-08-25 14:40",
+        stage: "QA Release",
+        description: "Valid until 2027-08-15 for liquid oral batch dispensing.",
+        user: "Dr. Farhan Malik",
+        state: "completed"
+      }
+    ],
     tests: [
       {
         id: "T-01",
@@ -709,15 +898,6 @@ export const MOCK_RETEST_SAMPLES: RetestSample[] = [
         currentRetestResult: "99.7%",
         passed: true,
         instrumentUsed: "Waters UV Spectrophotometer"
-      },
-      {
-        id: "T-02",
-        parameter: "pH of 0.1% w/v Solution",
-        specification: "9.5 - 10.5",
-        initialReleaseResult: "10.1",
-        currentRetestResult: "10.0",
-        passed: true,
-        instrumentUsed: "Mettler Toledo pH Meter"
       }
     ],
     createdAt: "2026-08-16T10:00:00Z",

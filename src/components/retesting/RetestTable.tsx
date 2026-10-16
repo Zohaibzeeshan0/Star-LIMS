@@ -4,8 +4,7 @@ import React, { useState, useMemo } from "react";
 import {
   RetestSample,
   RetestStatus,
-  RetestCategory,
-  ExpiryUrgency
+  RetestCategory
 } from "@/lib/types/retesting";
 import { RetestStatusBadge } from "./RetestStatusBadge";
 import { getRetestUrgency } from "@/lib/mock-data/retesting-samples";
@@ -28,7 +27,9 @@ import {
   MapPin,
   CheckCircle2,
   XCircle,
-  ShieldAlert
+  ShieldAlert,
+  User,
+  FlaskConical
 } from "lucide-react";
 
 interface RetestTableProps {
@@ -41,11 +42,13 @@ interface RetestTableProps {
 }
 
 type SortField =
-  | "currentRetestDate"
+  | "nextRetestDueDate"
+  | "previousTestDate"
+  | "lastRetestDate"
   | "id"
   | "materialName"
   | "batchNumber"
-  | "remainingStock";
+  | "analyst";
 
 export function RetestTable({
   samples,
@@ -55,24 +58,40 @@ export function RetestTable({
   onRequestStatusChange,
   onAddNew
 }: RetestTableProps) {
-  // Filter States
+  // Filter States (Specific user requirements: due status, material, supplier, assigned analyst, date range)
   const [searchQuery, setSearchQuery] = useState("");
-  const [statusFilter, setStatusFilter] = useState<RetestStatus | "ALL">("ALL");
-  const [categoryFilter, setCategoryFilter] = useState<RetestCategory | "ALL">("ALL");
-  const [urgencyFilter, setUrgencyFilter] = useState<ExpiryUrgency | "ALL">("ALL");
+  const [dueStatusFilter, setDueStatusFilter] = useState<RetestStatus | "ALL">("ALL");
+  const [materialFilter, setMaterialFilter] = useState<string>("ALL");
+  const [supplierFilter, setSupplierFilter] = useState<string>("ALL");
+  const [analystFilter, setAnalystFilter] = useState<string>("ALL");
+  const [dateFrom, setDateFrom] = useState<string>("");
+  const [dateTo, setDateTo] = useState<string>("");
 
   // Sorting States
-  const [sortField, setSortField] = useState<SortField>("currentRetestDate");
+  const [sortField, setSortField] = useState<SortField>("nextRetestDueDate");
   const [sortAsc, setSortAsc] = useState<boolean>(true);
 
   // Pagination
   const [currentPage, setCurrentPage] = useState<number>(1);
   const pageSize = 7;
 
+  // Extract unique options for filter dropdowns
+  const uniqueMaterials = useMemo(() => {
+    return Array.from(new Set(samples.map((s) => s.materialName))).sort();
+  }, [samples]);
+
+  const uniqueSuppliers = useMemo(() => {
+    return Array.from(new Set(samples.map((s) => s.supplier))).sort();
+  }, [samples]);
+
+  const uniqueAnalysts = useMemo(() => {
+    return Array.from(new Set(samples.map((s) => s.analyst))).sort();
+  }, [samples]);
+
   // Filter & Search Logic
   const filteredSamples = useMemo(() => {
     return samples.filter((sample) => {
-      // Search
+      // Free text search
       const query = searchQuery.toLowerCase().trim();
       if (query) {
         const matchId = sample.id.toLowerCase().includes(query);
@@ -81,33 +100,43 @@ export function RetestTable({
         const matchCode = sample.materialCode.toLowerCase().includes(query);
         const matchBatch = sample.batchNumber.toLowerCase().includes(query);
         const matchSupplier = sample.supplier.toLowerCase().includes(query);
-        const matchLocation = sample.warehouseLocation.toLowerCase().includes(query);
-        if (!matchId && !matchRawId && !matchName && !matchCode && !matchBatch && !matchSupplier && !matchLocation) {
+        const matchAnalyst = sample.analyst.toLowerCase().includes(query);
+        if (!matchId && !matchRawId && !matchName && !matchCode && !matchBatch && !matchSupplier && !matchAnalyst) {
           return false;
         }
       }
 
-      // Status
-      if (statusFilter !== "ALL" && sample.status !== statusFilter) {
+      // Due Status Filter
+      if (dueStatusFilter !== "ALL" && sample.status !== dueStatusFilter) {
         return false;
       }
 
-      // Category
-      if (categoryFilter !== "ALL" && sample.category !== categoryFilter) {
+      // Material Filter
+      if (materialFilter !== "ALL" && sample.materialName !== materialFilter) {
         return false;
       }
 
-      // Urgency
-      if (urgencyFilter !== "ALL") {
-        const { urgency } = getRetestUrgency(sample);
-        if (urgency !== urgencyFilter) {
-          return false;
-        }
+      // Supplier Filter
+      if (supplierFilter !== "ALL" && sample.supplier !== supplierFilter) {
+        return false;
+      }
+
+      // Analyst Filter
+      if (analystFilter !== "ALL" && sample.analyst !== analystFilter) {
+        return false;
+      }
+
+      // Date Range Filter (against nextRetestDueDate)
+      if (dateFrom && sample.nextRetestDueDate < dateFrom) {
+        return false;
+      }
+      if (dateTo && sample.nextRetestDueDate > dateTo) {
+        return false;
       }
 
       return true;
     });
-  }, [samples, searchQuery, statusFilter, categoryFilter, urgencyFilter]);
+  }, [samples, searchQuery, dueStatusFilter, materialFilter, supplierFilter, analystFilter, dateFrom, dateTo]);
 
   // Sort Logic
   const sortedSamples = useMemo(() => {
@@ -142,47 +171,44 @@ export function RetestTable({
 
   const handleResetFilters = () => {
     setSearchQuery("");
-    setStatusFilter("ALL");
-    setCategoryFilter("ALL");
-    setUrgencyFilter("ALL");
+    setDueStatusFilter("ALL");
+    setMaterialFilter("ALL");
+    setSupplierFilter("ALL");
+    setAnalystFilter("ALL");
+    setDateFrom("");
+    setDateTo("");
     setCurrentPage(1);
   };
 
   const handleExportCSV = () => {
     const headers = [
-      "Retest ID",
-      "Original RM ID",
+      "Sample ID",
       "Material Name",
       "Material Code",
-      "Category",
       "Batch Number",
+      "Previous Test Date",
+      "Last Retest Date",
+      "Next Retest Due Date",
+      "Assigned Analyst",
+      "Status",
       "Supplier",
       "Warehouse Location",
-      "Remaining Stock",
-      "Unit",
-      "Retest Cycle",
-      "Current Retest Date",
-      "Extended Retest Date",
-      "Status",
-      "QC Analyst"
+      "Remaining Stock"
     ];
 
     const rows = sortedSamples.map((s) => [
       `"${s.id}"`,
-      `"${s.rawMaterialSampleId}"`,
       `"${s.materialName}"`,
       `"${s.materialCode}"`,
-      `"${s.category}"`,
       `"${s.batchNumber}"`,
+      `"${s.previousTestDate}"`,
+      `"${s.lastRetestDate}"`,
+      `"${s.nextRetestDueDate}"`,
+      `"${s.analyst}"`,
+      `"${s.status}"`,
       `"${s.supplier}"`,
       `"${s.warehouseLocation}"`,
-      s.remainingStock,
-      `"${s.unit}"`,
-      s.retestCycleNumber,
-      `"${s.currentRetestDate}"`,
-      `"${s.extendedRetestDate || "N/A"}"`,
-      `"${s.status}"`,
-      `"${s.analyst}"`
+      `${s.remainingStock} ${s.unit}`
     ]);
 
     const csvContent =
@@ -193,7 +219,7 @@ export function RetestTable({
     link.setAttribute("href", encodedUri);
     link.setAttribute(
       "download",
-      `CitiPharma_Retesting_Surveillance_${new Date().toISOString().slice(0, 10)}.csv`
+      `CitiPharma_Retesting_Records_${new Date().toISOString().slice(0, 10)}.csv`
     );
     document.body.appendChild(link);
     link.click();
@@ -202,6 +228,18 @@ export function RetestTable({
 
   return (
     <div className="space-y-4">
+      {/* Mock Data Assurance Badge */}
+      <div className="flex items-center justify-between bg-blue-50/70 border border-blue-200/60 px-3.5 py-1.5 rounded-lg text-[11px] text-blue-800">
+        <div className="flex items-center gap-2">
+          <FlaskConical className="h-4 w-4 text-pharma-blue" />
+          <span className="font-semibold">Simulated QC Surveillance Environment</span>
+          <span className="text-blue-600 font-normal hidden sm:inline">• All records are realistic mock pharmaceutical surveillance data conforming to ICH Q7 §7.5</span>
+        </div>
+        <span className="font-mono text-[10px] font-bold bg-white px-2 py-0.5 rounded border border-blue-200">
+          MOCK DATA
+        </span>
+      </div>
+
       {/* Search and Filters Header */}
       <div className="rounded-xl border border-slate-200/80 bg-white p-4 shadow-2xs space-y-3">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
@@ -210,7 +248,7 @@ export function RetestTable({
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
             <input
               type="text"
-              placeholder="Search by Retest ID, Raw ID, Material, Batch #, Supplier, Location..."
+              placeholder="Search by Sample ID, Material, Code, Batch #, Supplier, Analyst..."
               value={searchQuery}
               onChange={(e) => {
                 setSearchQuery(e.target.value);
@@ -238,88 +276,142 @@ export function RetestTable({
               className="gap-1.5 text-xs font-bold shadow-xs"
             >
               <RotateCcw className="h-3.5 w-3.5" />
-              Schedule Retest Order
+              Add Retest Schedule
             </Button>
           </div>
         </div>
 
-        {/* Filter Dropdowns */}
+        {/* Filter Row 1: Due Status, Material, Supplier, Assigned Analyst */}
         <div className="grid grid-cols-1 sm:grid-cols-4 gap-2.5 pt-2 border-t border-slate-100">
-          {/* Status Filter */}
+          {/* Due Status Filter */}
           <div>
             <label className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1 block">
-              Retest Status
+              Due Status
             </label>
             <select
-              value={statusFilter}
+              value={dueStatusFilter}
               onChange={(e) => {
-                setStatusFilter(e.target.value as RetestStatus | "ALL");
+                setDueStatusFilter(e.target.value as RetestStatus | "ALL");
                 setCurrentPage(1);
               }}
               className="w-full text-xs py-1.5 px-2.5 rounded-md border border-slate-200 bg-slate-50/50 text-slate-700 focus:outline-none focus:ring-1 focus:ring-pharma-blue"
             >
-              <option value="ALL">All Statuses</option>
+              <option value="ALL">All Due Statuses</option>
               <option value="Due Soon">Due Soon (&lt;= 30 Days)</option>
-              <option value="Overdue">Overdue (Expired / Hold)</option>
-              <option value="Under Testing">Under Testing (In QC)</option>
-              <option value="Extended / Passed">Extended / Passed (+Extension)</option>
-              <option value="Scheduled">Scheduled (Valid)</option>
-              <option value="Quarantine">Quarantine (OOS Investigation)</option>
-              <option value="Rejected / OOS">Rejected / OOS</option>
+              <option value="Overdue">Overdue (Critical Hold)</option>
+              <option value="Scheduled">Scheduled (Valid Horizon)</option>
+              <option value="In Progress">In Progress (Under Testing)</option>
+              <option value="Completed">Completed (Passed / Extended)</option>
+              <option value="Quarantine">Quarantine (Investigation)</option>
+              <option value="Rejected">Rejected (OOS)</option>
             </select>
           </div>
 
-          {/* Urgency Filter */}
+          {/* Material Name Filter */}
           <div>
             <label className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1 block">
-              Urgency / Proximity
+              Material Name
             </label>
             <select
-              value={urgencyFilter}
+              value={materialFilter}
               onChange={(e) => {
-                setUrgencyFilter(e.target.value as ExpiryUrgency | "ALL");
+                setMaterialFilter(e.target.value);
                 setCurrentPage(1);
               }}
               className="w-full text-xs py-1.5 px-2.5 rounded-md border border-slate-200 bg-slate-50/50 text-slate-700 focus:outline-none focus:ring-1 focus:ring-pharma-blue"
             >
-              <option value="ALL">All Surveillance Horizons</option>
-              <option value="OVERDUE">🚨 Critical Overdue</option>
-              <option value="URGENT_30">⚠️ Urgent (Due within 30 days)</option>
-              <option value="UPCOMING_60">📅 Upcoming (31-60 days)</option>
-              <option value="EXTENDED">✨ Extended Shelf-Life</option>
-              <option value="VALID">✅ Valid (&gt; 60 days)</option>
+              <option value="ALL">All Raw Materials</option>
+              {uniqueMaterials.map((mat) => (
+                <option key={mat} value={mat}>
+                  {mat}
+                </option>
+              ))}
             </select>
           </div>
 
-          {/* Material Category */}
+          {/* Supplier Filter */}
           <div>
             <label className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1 block">
-              Material Category
+              Supplier / Vendor
             </label>
             <select
-              value={categoryFilter}
+              value={supplierFilter}
               onChange={(e) => {
-                setCategoryFilter(e.target.value as RetestCategory | "ALL");
+                setSupplierFilter(e.target.value);
                 setCurrentPage(1);
               }}
               className="w-full text-xs py-1.5 px-2.5 rounded-md border border-slate-200 bg-slate-50/50 text-slate-700 focus:outline-none focus:ring-1 focus:ring-pharma-blue"
             >
-              <option value="ALL">All Categories</option>
-              <option value="Active Pharmaceutical Ingredient (API)">Active Ingredients (API)</option>
-              <option value="Excipient / Binder / Filler">Excipients & Fillers</option>
-              <option value="Coating Polymer / Granulating Agent">Polymers & Binders</option>
-              <option value="Preservative / Antioxidant">Preservatives & Buffers</option>
-              <option value="Process Solvent / Reagent">Process Solvents</option>
+              <option value="ALL">All Suppliers</option>
+              {uniqueSuppliers.map((sup) => (
+                <option key={sup} value={sup}>
+                  {sup}
+                </option>
+              ))}
             </select>
           </div>
 
-          {/* Reset Action */}
-          <div className="flex items-end">
+          {/* Assigned Analyst Filter */}
+          <div>
+            <label className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1 block">
+              Assigned Analyst
+            </label>
+            <select
+              value={analystFilter}
+              onChange={(e) => {
+                setAnalystFilter(e.target.value);
+                setCurrentPage(1);
+              }}
+              className="w-full text-xs py-1.5 px-2.5 rounded-md border border-slate-200 bg-slate-50/50 text-slate-700 focus:outline-none focus:ring-1 focus:ring-pharma-blue"
+            >
+              <option value="ALL">All QC Analysts</option>
+              {uniqueAnalysts.map((a) => (
+                <option key={a} value={a}>
+                  {a}
+                </option>
+              ))}
+            </select>
+          </div>
+        </div>
+
+        {/* Filter Row 2: Date Range (Due Date Horizon) */}
+        <div className="grid grid-cols-1 sm:grid-cols-4 gap-2.5 pt-2 border-t border-slate-100 items-end">
+          <div>
+            <label className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1 block">
+              Due Date From
+            </label>
+            <input
+              type="date"
+              value={dateFrom}
+              onChange={(e) => {
+                setDateFrom(e.target.value);
+                setCurrentPage(1);
+              }}
+              className="w-full text-xs py-1.5 px-2.5 rounded-md border border-slate-200 bg-slate-50/50 text-slate-700 focus:outline-none focus:ring-1 focus:ring-pharma-blue"
+            />
+          </div>
+
+          <div>
+            <label className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1 block">
+              Due Date To
+            </label>
+            <input
+              type="date"
+              value={dateTo}
+              onChange={(e) => {
+                setDateTo(e.target.value);
+                setCurrentPage(1);
+              }}
+              className="w-full text-xs py-1.5 px-2.5 rounded-md border border-slate-200 bg-slate-50/50 text-slate-700 focus:outline-none focus:ring-1 focus:ring-pharma-blue"
+            />
+          </div>
+
+          <div className="sm:col-span-2 flex items-center justify-end">
             <Button
               variant="ghost"
               size="sm"
               onClick={handleResetFilters}
-              className="w-full text-xs text-slate-500 hover:text-pharma-blue"
+              className="text-xs text-slate-500 hover:text-pharma-blue"
             >
               Clear All Filters
             </Button>
@@ -338,7 +430,7 @@ export function RetestTable({
                     onClick={() => handleSort("id")}
                     className="flex items-center gap-1 hover:text-pharma-blue"
                   >
-                    Retest ID / Lot
+                    Sample ID
                     <ArrowUpDown className="h-3 w-3" />
                   </button>
                 </th>
@@ -347,30 +439,56 @@ export function RetestTable({
                     onClick={() => handleSort("materialName")}
                     className="flex items-center gap-1 hover:text-pharma-blue"
                   >
-                    Raw Material Details
-                    <ArrowUpDown className="h-3 w-3" />
-                  </button>
-                </th>
-                <th className="py-3 px-3.5">Warehouse Location</th>
-                <th className="py-3 px-3.5">
-                  <button
-                    onClick={() => handleSort("remainingStock")}
-                    className="flex items-center gap-1 hover:text-pharma-blue"
-                  >
-                    Remaining Stock
+                    Material Name &amp; Code
                     <ArrowUpDown className="h-3 w-3" />
                   </button>
                 </th>
                 <th className="py-3 px-3.5">
                   <button
-                    onClick={() => handleSort("currentRetestDate")}
+                    onClick={() => handleSort("batchNumber")}
                     className="flex items-center gap-1 hover:text-pharma-blue"
                   >
-                    Retest Horizon
+                    Batch Number
                     <ArrowUpDown className="h-3 w-3" />
                   </button>
                 </th>
-                <th className="py-3 px-3.5">Surveillance Status</th>
+                <th className="py-3 px-3.5">
+                  <button
+                    onClick={() => handleSort("previousTestDate")}
+                    className="flex items-center gap-1 hover:text-pharma-blue"
+                  >
+                    Previous Test Date
+                    <ArrowUpDown className="h-3 w-3" />
+                  </button>
+                </th>
+                <th className="py-3 px-3.5">
+                  <button
+                    onClick={() => handleSort("lastRetestDate")}
+                    className="flex items-center gap-1 hover:text-pharma-blue"
+                  >
+                    Last Retest Date
+                    <ArrowUpDown className="h-3 w-3" />
+                  </button>
+                </th>
+                <th className="py-3 px-3.5">
+                  <button
+                    onClick={() => handleSort("nextRetestDueDate")}
+                    className="flex items-center gap-1 hover:text-pharma-blue"
+                  >
+                    Next Retest Due Date
+                    <ArrowUpDown className="h-3 w-3" />
+                  </button>
+                </th>
+                <th className="py-3 px-3.5">
+                  <button
+                    onClick={() => handleSort("analyst")}
+                    className="flex items-center gap-1 hover:text-pharma-blue"
+                  >
+                    Assigned Analyst
+                    <ArrowUpDown className="h-3 w-3" />
+                  </button>
+                </th>
+                <th className="py-3 px-3.5">Status</th>
                 <th className="py-3 px-3.5 text-right">Actions</th>
               </tr>
             </thead>
@@ -378,12 +496,12 @@ export function RetestTable({
             <tbody className="divide-y divide-slate-100 text-xs">
               {paginatedSamples.length === 0 ? (
                 <tr>
-                  <td colSpan={7} className="py-12 text-center text-slate-500">
+                  <td colSpan={9} className="py-12 text-center text-slate-500">
                     <div className="flex flex-col items-center justify-center gap-2">
                       <Clock className="h-8 w-8 text-slate-300" />
                       <p className="font-semibold text-slate-700">No retest records matched your criteria.</p>
                       <p className="text-[11px] text-slate-400">
-                        Try clearing or adjusting search filters.
+                        Try clearing search terms or widening the date filter range.
                       </p>
                       <Button
                         variant="outline"
@@ -405,7 +523,7 @@ export function RetestTable({
                       key={sample.id}
                       className="hover:bg-slate-50/70 transition-colors group"
                     >
-                      {/* Retest ID & Original RM ID */}
+                      {/* Sample ID */}
                       <td className="py-3 px-3.5 align-top">
                         <div className="font-mono font-bold text-pharma-blue">
                           {sample.id}
@@ -413,83 +531,103 @@ export function RetestTable({
                         <div className="text-[10px] text-slate-400 font-mono mt-0.5">
                           Ref: {sample.rawMaterialSampleId}
                         </div>
-                        <div className="inline-flex items-center gap-1 mt-1 text-[9px] font-extrabold uppercase px-1.5 py-0.2 rounded bg-slate-100 text-slate-600">
+                        <span className="inline-block mt-1 text-[9px] font-bold uppercase px-1.5 py-0.2 rounded bg-slate-100 text-slate-600">
                           Cycle #{sample.retestCycleNumber}
-                        </div>
+                        </span>
                       </td>
 
-                      {/* Material Details */}
+                      {/* Material Name & Code */}
                       <td className="py-3 px-3.5 align-top max-w-xs">
                         <div className="font-bold text-slate-800 leading-snug">
                           {sample.materialName}
                         </div>
-                        <div className="flex items-center gap-2 mt-0.5 text-[11px] text-slate-500 font-mono">
-                          <span>{sample.materialCode}</span>
-                          <span>•</span>
-                          <span className="font-semibold text-pharma-blue">Lot: {sample.batchNumber}</span>
+                        <div className="text-[11px] text-slate-500 font-mono mt-0.5">
+                          {sample.materialCode}
                         </div>
                         <div className="text-[10px] text-slate-400 truncate mt-0.5">
-                          Mfg: {sample.manufacturer}
+                          Supplier: {sample.supplier}
                         </div>
                       </td>
 
-                      {/* Warehouse Location */}
+                      {/* Batch Number */}
                       <td className="py-3 px-3.5 align-top">
-                        <div className="flex items-center gap-1 text-slate-700 font-medium">
-                          <MapPin className="h-3 w-3 text-slate-400 shrink-0" />
-                          <span>{sample.warehouseLocation}</span>
-                        </div>
-                        <div className="text-[10px] text-slate-400 mt-0.5">
-                          {sample.storageCondition}
+                        <span className="font-mono font-bold text-slate-900 bg-slate-100 px-2 py-0.5 rounded">
+                          {sample.batchNumber}
+                        </span>
+                        <div className="text-[10px] text-slate-400 mt-1">
+                          Stock: {sample.remainingStock} {sample.unit}
                         </div>
                       </td>
 
-                      {/* Remaining Stock */}
-                      <td className="py-3 px-3.5 align-top">
-                        <div className="font-bold text-slate-800">
-                          {sample.remainingStock.toLocaleString()} {sample.unit}
-                        </div>
-                        <div className="text-[10px] text-slate-500">
-                          {sample.containersCount} sealed containers
-                        </div>
-                      </td>
-
-                      {/* Retest Horizon & Proximity */}
-                      <td className="py-3 px-3.5 align-top">
-                        <div className="flex items-center gap-1 text-slate-800 font-semibold">
+                      {/* Previous Test Date */}
+                      <td className="py-3 px-3.5 align-top text-slate-600 font-mono">
+                        <div className="flex items-center gap-1">
                           <Calendar className="h-3 w-3 text-slate-400" />
-                          <span>{sample.currentRetestDate}</span>
+                          <span>{sample.previousTestDate}</span>
                         </div>
-
-                        {sample.extendedRetestDate ? (
-                          <div className="text-[10px] font-bold text-teal-700 flex items-center gap-1 mt-0.5">
-                            <Sparkles className="h-2.5 w-2.5" />
-                            Ext: {sample.extendedRetestDate}
-                          </div>
-                        ) : (
-                          <div
-                            className={`text-[10px] font-bold mt-0.5 ${
-                              urgency.urgency === "OVERDUE"
-                                ? "text-red-700 animate-pulse"
-                                : urgency.urgency === "URGENT_30"
-                                ? "text-amber-700"
-                                : "text-slate-500"
-                            }`}
-                          >
-                            {urgency.label}
-                          </div>
-                        )}
-                        <div className="text-[10px] text-slate-400">
+                        <div className="text-[10px] text-slate-400 mt-0.5 font-sans">
                           Mfg: {sample.manufactureDate}
                         </div>
                       </td>
 
-                      {/* Status Badge */}
-                      <td className="py-3 px-3.5 align-top">
-                        <RetestStatusBadge status={sample.status} sample={sample} showUrgency />
+                      {/* Last Retest Date */}
+                      <td className="py-3 px-3.5 align-top text-slate-600 font-mono">
+                        <div className="flex items-center gap-1">
+                          <Calendar className="h-3 w-3 text-slate-400" />
+                          <span>{sample.lastRetestDate}</span>
+                        </div>
                       </td>
 
-                      {/* Row Actions */}
+                      {/* Next Retest Due Date (with Visual Approaching & Overdue Warnings) */}
+                      <td className="py-3 px-3.5 align-top">
+                        <div className="flex items-center gap-1 font-mono font-bold text-slate-900">
+                          <Calendar className="h-3 w-3 text-slate-400" />
+                          <span>{sample.nextRetestDueDate}</span>
+                        </div>
+
+                        {/* Visual Warnings for Approaching & Overdue */}
+                        {urgency.urgency === "OVERDUE" && (
+                          <div className="mt-1 inline-flex items-center gap-1 text-[10px] font-bold text-red-700 bg-red-100 px-2 py-0.5 rounded border border-red-300 animate-pulse">
+                            <AlertTriangle className="h-3 w-3 text-red-600" />
+                            <span>{urgency.label}</span>
+                          </div>
+                        )}
+                        {urgency.urgency === "DUE_SOON" && (
+                          <div className="mt-1 inline-flex items-center gap-1 text-[10px] font-bold text-amber-800 bg-amber-100 px-2 py-0.5 rounded border border-amber-300">
+                            <Clock className="h-3 w-3 text-amber-600" />
+                            <span>{urgency.label}</span>
+                          </div>
+                        )}
+                        {urgency.urgency === "COMPLETED" && (
+                          <div className="mt-1 inline-flex items-center gap-1 text-[10px] font-bold text-teal-800 bg-teal-100 px-1.5 py-0.2 rounded">
+                            <Sparkles className="h-2.5 w-2.5 text-teal-600" />
+                            <span>Extended</span>
+                          </div>
+                        )}
+                        {urgency.urgency === "SCHEDULED" && (
+                          <div className="mt-1 text-[10px] text-slate-400">
+                            {urgency.label}
+                          </div>
+                        )}
+                      </td>
+
+                      {/* Assigned Analyst */}
+                      <td className="py-3 px-3.5 align-top">
+                        <div className="flex items-center gap-1.5 text-slate-800 font-medium">
+                          <User className="h-3.5 w-3.5 text-slate-400" />
+                          <span>{sample.analyst}</span>
+                        </div>
+                        <div className="text-[10px] text-slate-400 mt-0.5">
+                          QA: {sample.reviewedBy}
+                        </div>
+                      </td>
+
+                      {/* Status */}
+                      <td className="py-3 px-3.5 align-top">
+                        <RetestStatusBadge status={sample.status} sample={sample} />
+                      </td>
+
+                      {/* Actions */}
                       <td className="py-3 px-3.5 align-top text-right space-y-1">
                         <div className="flex items-center justify-end gap-1">
                           <Button
@@ -497,7 +635,7 @@ export function RetestTable({
                             size="sm"
                             onClick={() => onView(sample)}
                             className="h-7 w-7 p-0 text-slate-500 hover:text-pharma-blue hover:bg-slate-100"
-                            title="View Retest Certificate & Test Battery"
+                            title="View Retest Details & Timeline"
                           >
                             <Eye className="h-3.5 w-3.5" />
                           </Button>
@@ -506,39 +644,30 @@ export function RetestTable({
                             size="sm"
                             onClick={() => onEdit(sample)}
                             className="h-7 w-7 p-0 text-slate-500 hover:text-pharma-blue hover:bg-slate-100"
-                            title="Edit Retest Record"
+                            title="Edit Retest Schedule"
                           >
                             <Edit2 className="h-3.5 w-3.5" />
                           </Button>
                         </div>
 
-                        {/* Quick Workflow Transition Buttons */}
+                        {/* Quick Action Transitions */}
                         <div className="flex items-center justify-end gap-1">
-                          {sample.status !== "Extended / Passed" && (
+                          {sample.status !== "Completed" && (
                             <button
-                              onClick={() => onRequestStatusChange(sample, "Extended / Passed")}
+                              onClick={() => onRequestStatusChange(sample, "Completed")}
                               className="text-[10px] font-bold px-2 py-0.5 rounded bg-teal-50 text-teal-800 hover:bg-teal-100 border border-teal-200 transition-colors"
                               title="Authorize Shelf-Life Extension"
                             >
                               Extend
                             </button>
                           )}
-                          {sample.status !== "Under Testing" && sample.status !== "Extended / Passed" && (
+                          {sample.status !== "In Progress" && sample.status !== "Completed" && (
                             <button
-                              onClick={() => onRequestStatusChange(sample, "Under Testing")}
+                              onClick={() => onRequestStatusChange(sample, "In Progress")}
                               className="text-[10px] font-bold px-2 py-0.5 rounded bg-purple-50 text-purple-800 hover:bg-purple-100 border border-purple-200 transition-colors"
-                              title="Send to QC Testing"
+                              title="Mark In Progress"
                             >
                               Test
-                            </button>
-                          )}
-                          {sample.status !== "Rejected / OOS" && sample.status !== "Quarantine" && (
-                            <button
-                              onClick={() => onRequestStatusChange(sample, "Quarantine")}
-                              className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-orange-50 text-orange-800 hover:bg-orange-100 border border-orange-200 transition-colors"
-                              title="Hold in Quarantine"
-                            >
-                              Hold
                             </button>
                           )}
                         </div>

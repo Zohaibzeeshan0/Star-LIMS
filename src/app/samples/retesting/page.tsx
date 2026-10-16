@@ -16,10 +16,10 @@ import {
   AlertTriangle,
   Clock,
   Sparkles,
-  ShieldAlert,
+  Calendar,
   Activity,
   Layers,
-  FileCheck
+  FlaskConical
 } from "lucide-react";
 
 export default function RawMaterialRetestingPage() {
@@ -48,10 +48,10 @@ export default function RawMaterialRetestingPage() {
     }, 5000);
   };
 
-  // Add Handler
+  // Add Handler (Add Retest Schedule)
   const handleAddSample = (newSample: RetestSample) => {
     setSamples((prev) => [newSample, ...prev]);
-    showNotification(`Retest surveillance order ${newSample.id} (${newSample.materialName}) scheduled successfully!`);
+    showNotification(`Retest schedule for ${newSample.id} (${newSample.materialName}) created successfully!`);
   };
 
   // Edit Handler
@@ -59,7 +59,7 @@ export default function RawMaterialRetestingPage() {
     setSamples((prev) =>
       prev.map((s) => (s.id === updatedSample.id ? updatedSample : s))
     );
-    showNotification(`Retest record ${updatedSample.id} updated successfully.`);
+    showNotification(`Retest schedule ${updatedSample.id} updated successfully.`);
   };
 
   // Status Change Confirmation Trigger
@@ -79,9 +79,9 @@ export default function RawMaterialRetestingPage() {
     let extensionDate = sample.extendedRetestDate;
     let months = sample.extensionMonthsGranted || 12;
 
-    if (newStatus === "Extended / Passed" && !extensionDate) {
-      // Calculate +12 or +24 months extension from current retest date
-      const d = new Date(sample.currentRetestDate);
+    if (newStatus === "Completed" && !extensionDate) {
+      // Calculate +12 or +24 months extension from next retest due date
+      const d = new Date(sample.nextRetestDueDate);
       d.setMonth(d.getMonth() + months);
       extensionDate = d.toISOString().slice(0, 10);
     }
@@ -90,12 +90,12 @@ export default function RawMaterialRetestingPage() {
       ...sample,
       status: newStatus,
       extendedRetestDate: extensionDate,
-      qaDispositionDate: newStatus === "Extended / Passed" ? new Date().toISOString().slice(0, 10) : sample.qaDispositionDate,
+      qaDispositionDate: newStatus === "Completed" ? new Date().toISOString().slice(0, 10) : sample.qaDispositionDate,
       updatedAt: new Date().toISOString(),
       remarks:
-        newStatus === "Extended / Passed"
+        newStatus === "Completed"
           ? `${sample.remarks} • Retest PASSED. Shelf-life extension authorized until ${extensionDate} (+${months} Mo).`
-          : newStatus === "Rejected / OOS"
+          : newStatus === "Rejected"
           ? `${sample.remarks} • REJECTED / OOS: Degradation exceeds pharmacopeial limit. Locked in quarantine for disposal.`
           : newStatus === "Quarantine"
           ? `${sample.remarks} • Placed in QA Quarantine hold pending laboratory investigation.`
@@ -108,19 +108,13 @@ export default function RawMaterialRetestingPage() {
     showNotification(`Status for lot ${sample.batchNumber} updated to "${newStatus}".`);
   };
 
-  // Metrics
+  // Retest Dashboard Mock Counts (Exact user requirement: Due Soon, Overdue, Scheduled, In Progress, and Completed)
   const total = samples.length;
-  const extended = samples.filter((s) => s.status === "Extended / Passed").length;
-  const overdue = samples.filter((s) => {
-    const { urgency } = getRetestUrgency(s);
-    return urgency === "OVERDUE";
-  }).length;
-  const dueSoon = samples.filter((s) => {
-    const { urgency } = getRetestUrgency(s);
-    return urgency === "URGENT_30";
-  }).length;
-  const underTesting = samples.filter((s) => s.status === "Under Testing").length;
-  const rejected = samples.filter((s) => s.status === "Rejected / OOS").length;
+  const dueSoon = samples.filter((s) => s.status === "Due Soon").length;
+  const overdue = samples.filter((s) => s.status === "Overdue").length;
+  const scheduled = samples.filter((s) => s.status === "Scheduled").length;
+  const inProgress = samples.filter((s) => s.status === "In Progress").length;
+  const completed = samples.filter((s) => s.status === "Completed").length;
 
   return (
     <div className="space-y-6">
@@ -128,14 +122,14 @@ export default function RawMaterialRetestingPage() {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-200/80 pb-4">
         <div>
           <span className="text-xs font-bold text-teal-pharma uppercase tracking-wider">
-            Phase 5 Module • Active Ingredients & Excipients Surveillance (ICH Q7 §7.5)
+            Phase 5 Module • Active Ingredients &amp; Excipients Surveillance (ICH Q7 §7.5)
           </span>
           <h1 className="font-heading text-2xl font-black text-pharma-blue flex items-center gap-2 mt-0.5">
             <RotateCcw className="h-6 w-6 text-teal-pharma" />
-            Raw Material Retesting & Shelf-Life Extension Program
+            Raw Material Retesting Management
           </h1>
           <p className="text-xs text-slate-500 mt-1">
-            Surveillance re-assays, potency stability tracking, Karl Fischer moisture pickup, degradation checks, and QA authorization for warehouse shelf-life extension.
+            Surveillance re-assays, potency stability tracking, Karl Fischer moisture monitoring, and QA authorization for warehouse shelf-life extension.
           </p>
         </div>
 
@@ -147,7 +141,7 @@ export default function RawMaterialRetestingPage() {
             className="gap-1.5 font-bold shadow-xs"
           >
             <PlusCircle className="h-4 w-4" />
-            Schedule Retest Order
+            Add Retest Schedule
           </Button>
         </div>
       </div>
@@ -164,7 +158,7 @@ export default function RawMaterialRetestingPage() {
                 CRITICAL SURVEILLANCE ALERT: {overdue} Raw Material Lot{overdue > 1 ? "s are" : " is"} Overdue for Retest!
               </div>
               <div className="text-[11px] text-red-700 mt-0.5">
-                ICH Q7 & Citi Pharma SOP-QC-075 mandate immediate warehouse dispensing lock. Immediate re-assay or QA disposition required.
+                ICH Q7 &amp; Citi Pharma SOP-QC-075 mandate immediate warehouse dispensing lock. Immediate re-assay or QA disposition required.
               </div>
             </div>
           </div>
@@ -173,7 +167,7 @@ export default function RawMaterialRetestingPage() {
             size="sm"
             onClick={() => {
               const overdueSample = samples.find(
-                (s) => getRetestUrgency(s).urgency === "OVERDUE"
+                (s) => s.status === "Overdue"
               );
               if (overdueSample) {
                 setSelectedSample(overdueSample);
@@ -203,46 +197,52 @@ export default function RawMaterialRetestingPage() {
         </div>
       )}
 
-      {/* Retest Metric KPI Cards */}
+      {/* Retest Dashboard KPI Cards (Exact user requirements: Due Soon, Overdue, Scheduled, In Progress, Completed) */}
       <div className="grid grid-cols-2 sm:grid-cols-6 gap-3.5">
+        {/* Total Surveillance */}
         <div className="rounded-xl border border-slate-200/80 bg-white p-4 shadow-2xs border-l-4 border-l-pharma-blue">
-          <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500">Total Surveillance</span>
+          <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500">Total Lots</span>
           <div className="font-heading text-2xl font-black text-pharma-blue mt-0.5">{total}</div>
-          <span className="text-[10px] text-slate-400 font-medium">Lots in retest program</span>
+          <span className="text-[10px] text-slate-400 font-medium">In Retest Program</span>
         </div>
 
-        <div className="rounded-xl border border-slate-200/80 bg-white p-4 shadow-2xs border-l-4 border-l-teal-pharma">
-          <span className="text-[10px] font-bold uppercase tracking-wider text-teal-pharma-dark">Extended & Valid</span>
-          <div className="font-heading text-2xl font-black text-teal-pharma-dark mt-0.5">{extended}</div>
-          <span className="text-[10px] text-teal-pharma-dark font-medium">+12 to 24 Mo granted</span>
-        </div>
-
+        {/* Due Soon */}
         <div className="rounded-xl border border-slate-200/80 bg-white p-4 shadow-2xs border-l-4 border-l-amber-500">
-          <span className="text-[10px] font-bold uppercase tracking-wider text-amber-800">Due Soon (&le;30d)</span>
+          <span className="text-[10px] font-bold uppercase tracking-wider text-amber-800">Due Soon</span>
           <div className="font-heading text-2xl font-black text-amber-800 mt-0.5">{dueSoon}</div>
-          <span className="text-[10px] text-amber-700 font-medium">Sampling requisition open</span>
+          <span className="text-[10px] text-amber-700 font-medium">Due in &le;30 Days</span>
         </div>
 
+        {/* Overdue */}
         <div className="rounded-xl border border-slate-200/80 bg-white p-4 shadow-2xs border-l-4 border-l-red-500">
-          <span className="text-[10px] font-bold uppercase tracking-wider text-red-700">Overdue (Critical)</span>
+          <span className="text-[10px] font-bold uppercase tracking-wider text-red-700">Overdue</span>
           <div className="font-heading text-2xl font-black text-red-700 mt-0.5">{overdue}</div>
-          <span className="text-[10px] text-red-600 font-medium">Dispensing locked</span>
+          <span className="text-[10px] text-red-600 font-medium">Critical Hold / Expired</span>
         </div>
 
+        {/* Scheduled */}
+        <div className="rounded-xl border border-slate-200/80 bg-white p-4 shadow-2xs border-l-4 border-l-blue-500">
+          <span className="text-[10px] font-bold uppercase tracking-wider text-blue-700">Scheduled</span>
+          <div className="font-heading text-2xl font-black text-blue-700 mt-0.5">{scheduled}</div>
+          <span className="text-[10px] text-blue-600 font-medium">Valid Surveillance</span>
+        </div>
+
+        {/* In Progress */}
         <div className="rounded-xl border border-slate-200/80 bg-white p-4 shadow-2xs border-l-4 border-l-purple-500">
-          <span className="text-[10px] font-bold uppercase tracking-wider text-purple-700">Under Testing</span>
-          <div className="font-heading text-2xl font-black text-purple-700 mt-0.5">{underTesting}</div>
-          <span className="text-[10px] text-purple-600 font-medium">HPLC / KF running</span>
+          <span className="text-[10px] font-bold uppercase tracking-wider text-purple-700">In Progress</span>
+          <div className="font-heading text-2xl font-black text-purple-700 mt-0.5">{inProgress}</div>
+          <span className="text-[10px] text-purple-600 font-medium">Assays Active in QC</span>
         </div>
 
-        <div className="rounded-xl border border-slate-200/80 bg-white p-4 shadow-2xs border-l-4 border-l-rose-500 col-span-2 sm:col-span-1">
-          <span className="text-[10px] font-bold uppercase tracking-wider text-rose-800">Rejected / OOS</span>
-          <div className="font-heading text-2xl font-black text-rose-800 mt-0.5">{rejected}</div>
-          <span className="text-[10px] text-rose-600 font-medium">Degradation / Disposal</span>
+        {/* Completed */}
+        <div className="rounded-xl border border-slate-200/80 bg-white p-4 shadow-2xs border-l-4 border-l-teal-pharma col-span-2 sm:col-span-1">
+          <span className="text-[10px] font-bold uppercase tracking-wider text-teal-pharma-dark">Completed</span>
+          <div className="font-heading text-2xl font-black text-teal-pharma-dark mt-0.5">{completed}</div>
+          <span className="text-[10px] text-teal-pharma-dark font-medium">Shelf-Life Extended</span>
         </div>
       </div>
 
-      {/* Main Interactive Table */}
+      {/* Main Interactive Retest Table */}
       <RetestTable
         samples={samples}
         onView={(sample) => {
@@ -261,14 +261,14 @@ export default function RawMaterialRetestingPage() {
         onRequestStatusChange={handleRequestStatusChange}
       />
 
-      {/* Add New Retest Order Modal */}
+      {/* Add Retest Schedule Modal Dialog */}
       <AddRetestSampleModal
         open={addModalOpen}
         onClose={() => setAddModalOpen(false)}
         onAddSample={handleAddSample}
       />
 
-      {/* View Sample Details Modal */}
+      {/* View Retest Details Modal Dialog (includes previous retest history & mock timeline) */}
       <ViewRetestModal
         sample={selectedSample}
         open={viewModalOpen}
@@ -279,7 +279,7 @@ export default function RawMaterialRetestingPage() {
         }}
       />
 
-      {/* Edit Sample Modal */}
+      {/* Edit Retest Schedule Modal Dialog */}
       <EditRetestSampleModal
         sample={selectedSample}
         open={editModalOpen}
@@ -287,21 +287,21 @@ export default function RawMaterialRetestingPage() {
         onUpdateSample={handleUpdateSample}
       />
 
-      {/* Confirmation Dialog for Status Changes */}
+      {/* Confirmation Dialog for Status Transitions */}
       {pendingStatusChange && (
         <RetestConfirmDialog
           open={confirmDialogOpen}
-          title={`Confirm Surveillance Disposition: ${pendingStatusChange.newStatus}`}
-          description={`Are you sure you want to change the surveillance disposition of lot "${pendingStatusChange.sample.batchNumber}" (${pendingStatusChange.sample.materialName}) to "${pendingStatusChange.newStatus}"? If approving extension, an additional +12 to +24 months shelf-life will be recorded under 21 CFR Part 11 audit trails.`}
+          title={`Confirm Retest Disposition: ${pendingStatusChange.newStatus}`}
+          description={`Are you sure you want to change the surveillance status of lot "${pendingStatusChange.sample.batchNumber}" (${pendingStatusChange.sample.materialName}) to "${pendingStatusChange.newStatus}"? This disposition is logged under 21 CFR Part 11 audit trails.`}
           confirmLabel={
-            pendingStatusChange.newStatus === "Extended / Passed"
+            pendingStatusChange.newStatus === "Completed"
               ? "Authorize Extension (+12 Mo)"
               : `Confirm as ${pendingStatusChange.newStatus}`
           }
           variant={
-            pendingStatusChange.newStatus === "Extended / Passed"
+            pendingStatusChange.newStatus === "Completed"
               ? "teal"
-              : pendingStatusChange.newStatus === "Rejected / OOS"
+              : pendingStatusChange.newStatus === "Rejected"
               ? "danger"
               : pendingStatusChange.newStatus === "Quarantine"
               ? "warning"

@@ -18,7 +18,7 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { PlusCircle, AlertCircle, RotateCcw } from "lucide-react";
+import { PlusCircle, RotateCcw } from "lucide-react";
 
 interface AddRetestSampleModalProps {
   open: boolean;
@@ -54,8 +54,9 @@ export function AddRetestSampleModal({
       unit: "kg",
       containersCount: 10,
       manufactureDate: "2024-10-15",
-      originalRetestDate: "2026-10-15",
-      currentRetestDate: "2026-10-15",
+      previousTestDate: "2024-10-25",
+      lastRetestDate: "2024-10-25",
+      nextRetestDueDate: "2026-10-25",
       extendedRetestDate: "",
       retestCycleNumber: 1,
       extensionMonthsGranted: 12,
@@ -63,9 +64,9 @@ export function AddRetestSampleModal({
       retestReason: "Scheduled 24-Month Surveillance for Shelf-Life Extension",
       pharmacopeia: "USP 48-NF 43",
       storageCondition: "Store airtight below 25°C, protect from moisture and light",
-      analyst: "Zubair Ahmed (Senior QC Analyst)",
-      reviewedBy: "Dr. Farhan Malik (QA Director)",
-      remarks: "Surveillance sampling requisition initiated. Container seals and desiccant packs verified intact.",
+      analyst: "Zubair Ahmed",
+      reviewedBy: "Dr. Farhan Malik",
+      remarks: "Surveillance sampling schedule initiated. Seals and desiccant packs verified intact.",
     },
   });
 
@@ -84,9 +85,9 @@ export function AddRetestSampleModal({
       unit: data.unit,
       containersCount: Number(data.containersCount),
       manufactureDate: data.manufactureDate,
-      initialReceiptDate: data.manufactureDate,
-      originalRetestDate: data.originalRetestDate,
-      currentRetestDate: data.currentRetestDate,
+      previousTestDate: data.previousTestDate,
+      lastRetestDate: data.lastRetestDate,
+      nextRetestDueDate: data.nextRetestDueDate,
       extendedRetestDate: data.extendedRetestDate || undefined,
       retestCycleNumber: Number(data.retestCycleNumber),
       extensionMonthsGranted: data.extensionMonthsGranted ? Number(data.extensionMonthsGranted) : undefined,
@@ -97,13 +98,34 @@ export function AddRetestSampleModal({
       analyst: data.analyst,
       reviewedBy: data.reviewedBy,
       remarks: data.remarks,
+      history: [],
+      timeline: [
+        {
+          id: `EV-${Date.now()}-1`,
+          title: "Retest Schedule Created",
+          timestamp: new Date().toISOString().slice(0, 16).replace("T", " "),
+          stage: "QC LIMS Surveillance Scheduling",
+          description: `Retest schedule created under protocol ${data.retestReason}.`,
+          user: data.analyst,
+          state: "completed"
+        },
+        {
+          id: `EV-${Date.now()}-2`,
+          title: "Surveillance Sampling & Re-assay",
+          timestamp: data.nextRetestDueDate,
+          stage: "QC Laboratory",
+          description: `Assay & moisture surveillance testing due by ${data.nextRetestDueDate}.`,
+          user: data.analyst,
+          state: "current"
+        }
+      ],
       tests: [
         {
           id: "T-01",
           parameter: "Assay / Potency Verification",
           specification: "98.5% - 101.5%",
           initialReleaseResult: "99.8%",
-          currentRetestResult: data.status === "Extended / Passed" ? "99.5%" : "Testing scheduled",
+          currentRetestResult: data.status === "Completed" ? "99.5%" : "Testing scheduled",
           passed: true,
           instrumentUsed: "Waters Alliance e2695 HPLC"
         },
@@ -112,7 +134,7 @@ export function AddRetestSampleModal({
           parameter: "Related Substances / Degradation Products",
           specification: "NMT 0.20%",
           initialReleaseResult: "0.04%",
-          currentRetestResult: data.status === "Extended / Passed" ? "0.06%" : "Testing scheduled",
+          currentRetestResult: data.status === "Completed" ? "0.06%" : "Testing scheduled",
           passed: true,
           instrumentUsed: "Waters UV/Vis 2489"
         },
@@ -121,7 +143,7 @@ export function AddRetestSampleModal({
           parameter: "Water Content by Karl Fischer",
           specification: "NMT 0.50%",
           initialReleaseResult: "0.20%",
-          currentRetestResult: data.status === "Extended / Passed" ? "0.24%" : "Testing scheduled",
+          currentRetestResult: data.status === "Completed" ? "0.24%" : "Testing scheduled",
           passed: true,
           instrumentUsed: "Metrohm 890 Titrando KF"
         }
@@ -145,10 +167,10 @@ export function AddRetestSampleModal({
             </div>
             <div>
               <DialogTitle className="font-heading text-lg font-bold text-pharma-blue">
-                Schedule Raw Material Retest Surveillance
+                Add Retest Schedule
               </DialogTitle>
               <DialogDescription className="text-xs text-slate-500">
-                Log a scheduled or reactive re-assay order for APIs and critical excipients to authorize shelf-life extension.
+                Register a new raw material surveillance schedule, configure test intervals, and assign QC analysts.
               </DialogDescription>
             </div>
           </div>
@@ -159,7 +181,7 @@ export function AddRetestSampleModal({
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
             <div>
               <label className="text-xs font-semibold text-slate-700">
-                Retest Order ID <span className="text-red-500">*</span>
+                Sample ID <span className="text-red-500">*</span>
               </label>
               <Input
                 {...register("id")}
@@ -266,11 +288,6 @@ export function AddRetestSampleModal({
                 placeholder="e.g. Mallinckrodt Pharmaceuticals"
                 className="text-xs mt-1"
               />
-              {errors.supplier && (
-                <p className="text-[11px] text-red-500 mt-0.5">
-                  {errors.supplier.message}
-                </p>
-              )}
             </div>
 
             <div>
@@ -282,11 +299,6 @@ export function AddRetestSampleModal({
                 placeholder="e.g. Mallinckrodt Inc., USA"
                 className="text-xs mt-1"
               />
-              {errors.manufacturer && (
-                <p className="text-[11px] text-red-500 mt-0.5">
-                  {errors.manufacturer.message}
-                </p>
-              )}
             </div>
           </div>
 
@@ -301,11 +313,6 @@ export function AddRetestSampleModal({
                 placeholder="e.g. Bay R-02 (Climate Controlled 20-25°C)"
                 className="text-xs mt-1"
               />
-              {errors.warehouseLocation && (
-                <p className="text-[11px] text-red-500 mt-0.5">
-                  {errors.warehouseLocation.message}
-                </p>
-              )}
             </div>
 
             <div>
@@ -345,7 +352,7 @@ export function AddRetestSampleModal({
             </div>
           </div>
 
-          {/* Dates & Retest Cycle */}
+          {/* User Required Retest Dates Row */}
           <div className="grid grid-cols-1 sm:grid-cols-4 gap-3 bg-slate-50/70 p-3 rounded-lg border border-slate-200/80">
             <div>
               <label className="text-xs font-semibold text-slate-700">
@@ -360,41 +367,39 @@ export function AddRetestSampleModal({
 
             <div>
               <label className="text-xs font-semibold text-slate-700">
-                Original Retest Date <span className="text-red-500">*</span>
+                Previous Test Date <span className="text-red-500">*</span>
               </label>
               <Input
                 type="date"
-                {...register("originalRetestDate")}
+                {...register("previousTestDate")}
                 className="text-xs mt-1 bg-white"
               />
             </div>
 
             <div>
               <label className="text-xs font-semibold text-slate-700">
-                Current Retest Horizon <span className="text-red-500">*</span>
+                Last Retest Date <span className="text-red-500">*</span>
               </label>
               <Input
                 type="date"
-                {...register("currentRetestDate")}
+                {...register("lastRetestDate")}
                 className="text-xs mt-1 bg-white"
               />
             </div>
 
             <div>
               <label className="text-xs font-semibold text-slate-700">
-                Retest Cycle # <span className="text-red-500">*</span>
+                Next Retest Due Date <span className="text-red-500">*</span>
               </label>
               <Input
-                type="number"
-                {...register("retestCycleNumber")}
-                min={1}
-                max={5}
-                className="text-xs mt-1 bg-white"
+                type="date"
+                {...register("nextRetestDueDate")}
+                className="text-xs mt-1 bg-white font-bold text-pharma-blue"
               />
             </div>
           </div>
 
-          {/* Retest Reason, Monograph & Status */}
+          {/* Retest Reason, Monograph & Due Status */}
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
             <div>
               <label className="text-xs font-semibold text-slate-700">
@@ -424,7 +429,7 @@ export function AddRetestSampleModal({
 
             <div>
               <label className="text-xs font-semibold text-slate-700">
-                Surveillance Status <span className="text-red-500">*</span>
+                Initial Retest Status <span className="text-red-500">*</span>
               </label>
               <select
                 {...register("status")}
@@ -433,10 +438,10 @@ export function AddRetestSampleModal({
                 <option value="Scheduled">Scheduled</option>
                 <option value="Due Soon">Due Soon (&lt;= 30 Days)</option>
                 <option value="Overdue">Overdue</option>
-                <option value="Under Testing">Under Testing</option>
-                <option value="Extended / Passed">Extended / Passed</option>
+                <option value="In Progress">In Progress</option>
+                <option value="Completed">Completed</option>
                 <option value="Quarantine">Quarantine</option>
-                <option value="Rejected / OOS">Rejected / OOS</option>
+                <option value="Rejected">Rejected</option>
               </select>
             </div>
           </div>
@@ -511,7 +516,7 @@ export function AddRetestSampleModal({
               className="text-xs font-bold gap-1.5"
             >
               <PlusCircle className="h-4 w-4" />
-              Schedule Retest Order
+              Add Retest Schedule
             </Button>
           </DialogFooter>
         </form>

@@ -5,13 +5,13 @@
  */
 
 export type RetestStatus =
-  | "Scheduled"
   | "Due Soon"
   | "Overdue"
-  | "Under Testing"
-  | "Extended / Passed"
-  | "Rejected / OOS"
-  | "Quarantine";
+  | "Scheduled"
+  | "In Progress"
+  | "Completed"
+  | "Quarantine"
+  | "Rejected";
 
 export type RetestCategory =
   | "Active Pharmaceutical Ingredient (API)"
@@ -22,7 +22,29 @@ export type RetestCategory =
 
 export type RetestUnit = "kg" | "g" | "Liters" | "Drums" | "Bags";
 
-export type ExpiryUrgency = "OVERDUE" | "URGENT_30" | "UPCOMING_60" | "VALID" | "EXTENDED";
+export type ExpiryUrgency = "OVERDUE" | "DUE_SOON" | "SCHEDULED" | "IN_PROGRESS" | "COMPLETED";
+
+export interface RetestHistoryRecord {
+  id: string;
+  cycleNumber: number;
+  testDate: string;
+  assayResult: string;
+  waterContent: string;
+  impurities: string;
+  extensionGranted: string; // e.g. "+12 Months (Valid until 2026-10-01)"
+  analyst: string;
+  disposition: "Approved / Extended" | "Quarantine Hold" | "Rejected";
+}
+
+export interface RetestTimelineEvent {
+  id: string;
+  title: string;
+  timestamp: string;
+  stage: string;
+  description: string;
+  user: string;
+  state: "completed" | "current" | "pending";
+}
 
 export interface RetestAnalyticalResult {
   id: string;
@@ -35,7 +57,7 @@ export interface RetestAnalyticalResult {
 }
 
 export interface RetestSample {
-  id: string; // e.g. "CP-RET-2026-001"
+  id: string; // Sample ID e.g. "CP-RET-2026-001"
   rawMaterialSampleId: string; // Original intake reference e.g. "CP-RAW-2024-0310"
   materialCode: string; // e.g. "RM-API-0012"
   materialName: string; // e.g. "Paracetamol DC 90% Granules"
@@ -50,11 +72,11 @@ export interface RetestSample {
   unit: RetestUnit;
   containersCount: number; // e.g. 12 drums
 
-  // Retest Lifecycle Dates
+  // Retest Lifecycle Dates (Explicit user requirements)
+  previousTestDate: string; // Initial lot test or prior retest date (YYYY-MM-DD)
+  lastRetestDate: string; // Date of most recent retest (YYYY-MM-DD)
+  nextRetestDueDate: string; // Next scheduled retest due date (YYYY-MM-DD)
   manufactureDate: string; // YYYY-MM-DD
-  initialReceiptDate: string; // YYYY-MM-DD
-  originalRetestDate: string; // YYYY-MM-DD
-  currentRetestDate: string; // YYYY-MM-DD
   extendedRetestDate?: string; // YYYY-MM-DD (after passing)
   retestCycleNumber: number; // 1, 2, 3
   extensionMonthsGranted?: number; // e.g. 12 or 24 months
@@ -64,10 +86,14 @@ export interface RetestSample {
   retestReason: string; // e.g. "Scheduled 24-Month Surveillance", "Dispensing Request for Bulk Staging"
   pharmacopeia: "BP 2026" | "USP 48-NF 43" | "Ph. Eur. 11.0" | "In-House Validated";
   storageCondition: string; // e.g. "Store airtight below 25°C, protect from light"
-  analyst: string; // Assigned QC chemist
+  analyst: string; // Assigned QC Analyst
   reviewedBy: string; // QA Manager
   qaDispositionDate?: string; // Date QA stamped release or rejection
   remarks: string;
+
+  // Previous Retest History & Mock Timeline (Explicit user requirements)
+  history: RetestHistoryRecord[];
+  timeline: RetestTimelineEvent[];
 
   // Analytical Test Results
   tests: RetestAnalyticalResult[];
@@ -78,8 +104,10 @@ export interface RetestSample {
 
 export interface RetestFilterState {
   searchQuery: string;
-  status: RetestStatus | "ALL";
-  category: RetestCategory | "ALL";
-  urgency: ExpiryUrgency | "ALL";
+  dueStatus: RetestStatus | "ALL";
+  material: string;
   supplier: string;
+  analyst: string;
+  dateFrom: string;
+  dateTo: string;
 }
